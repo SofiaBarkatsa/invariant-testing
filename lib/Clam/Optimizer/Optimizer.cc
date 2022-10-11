@@ -22,11 +22,15 @@
 #include "clam/Clam.hh"
 #include "clam/Transforms/Optimizer.hh"
 #include "crab/analysis/abs_transformer.hpp"
+#include "crab/numbers/wrapint.hpp"
 
 #include "crab/config.h"
 #include "crab/support/debug.hpp"
 
 #include <type_traits>
+#include <stdlib.h>  
+#include <string> 
+#include <fstream>
 
 using namespace llvm;
 
@@ -61,6 +65,15 @@ llvm::cl::opt<bool>
 ReplaceWithConstants("crab-opt-replace-with-constants",
 	 llvm::cl::desc("Replace values with constants inferred by Crab"),
 	 llvm::cl::init(false));
+
+
+// PARAMETERS BY SOFIA ----------------------------------------------------------------------------
+static llvm::cl::opt<int>
+    Percentage("percentage",
+             llvm::cl::desc("Percentage for Transformations"),
+             llvm::cl::init(50));
+//-------------------------------------------------------------------------------------------------
+
 /* End LLVM pass options */
 
 #define DEBUG_TYPE "crab-opt"
@@ -70,40 +83,118 @@ STATISTIC(NumDeadEdges, "Number of dead edges");
 STATISTIC(NumInstrBlocks, "Number of blocks instrumented with invariants");
 STATISTIC(NumInstrLoads, "Number of load inst instrumented with invariants");
 
+
+// GLOBAL VARS BY SOFIA------------------------------------------------------------------
+std::ofstream out;			//file to write module pass output
+int Seed = 0;
+std::string Mode = "stronger";
+std::string Subfolder;
+//---------------------------------------------------------------------------------------
+
+
+// FUNCTIONS BY SOFIA---------------------------------------------------------------------
+bool flip_a_coin(){
+  int num = rand()%100;
+
+  if (num < Percentage) return true;
+  else return false;
+}
+
+int throw_dice(int options){
+  if (options <= 0){
+    return 0;
+  }
+  return rand()%options;
+}
+
+
+void write_to_file(clam::lin_cst_t cst) {
+  auto e = cst.expression();
+  for (auto t : e) {
+    clam::number_t n = t.first; 
+    int64_t num = int64_t(n); //works
+    clam::varname_t v = t.second.name();
+    
+    if (n == 0)
+      continue;
+    if (n > 0) {    // && t != cst.variables().begin()
+      out << " + ";
+    }
+    if (n == -1) {
+      out << " - ";
+    } 
+    else if (n != 1) {
+      out << num << "*"; 
+    }
+    out << v.str(); 
+  }
+
+  if (cst.is_inequality()) {
+    out<<" <= "; 
+  } 
+  else if (cst.is_equality()) {
+     out<<" = "; 
+  } 
+  // not equal
+  else {
+     out<<" != "; 
+  }
+
+  clam::number_t c = cst.expression().constant();  
+  int64_t cnum = int64_t(c); //works
+  out << -1* cnum ;//??-1
+}
+
+
+void log_info(llvm::BasicBlock *B, clam::lin_cst_t cst){
+  out<<"-------------------------------------------------------------------------------------\n";
+  out<<"\nIn function : "<<std::string(B->getParent()->getName())<<"\t In Block "<< std::string(B->getName())<<" :\n";
+  out<< "    Initial constraint :   ";
+  write_to_file(cst);  
+  out<<"\n\n";
+  // cst.dump();
+} 
+
+//----------------------------------------------------------------------------------------
+
+
 namespace {
 
 using namespace clam;  
 using namespace crab::cfg;
 
-bool readMemory(const llvm::BasicBlock &B) {
+
+static bool readMemory(const llvm::BasicBlock &B) {
   return std::any_of(B.begin(), B.end(),
 		     [](const Instruction &I) {
 		       return isa<LoadInst>(I);
 		     });
 }
-bool hasUnreachable(const llvm::BasicBlock &B) {
+static bool hasUnreachable(const llvm::BasicBlock &B) {
   return std::any_of(B.begin(), B.end(),
 		     [](const Instruction &I) {
 		       return isa<UnreachableInst>(I);
 		     });
 }
   
-bool requireDominatorTree(InvariantsLocation val) {
+static bool requireDominatorTree(InvariantsLocation val) {
   return (val == InvariantsLocation::BLOCK ||
 	  val == InvariantsLocation::LOOP_HEADER ||
 	  val == InvariantsLocation::ALL);
 }
 
-bool requireLoopInfo(InvariantsLocation val) {
+static bool requireLoopInfo(InvariantsLocation val) {
   return val == InvariantsLocation::LOOP_HEADER;
 }
-  
+
+
+
 // Convert a Crab expression into LLVM bitcode
 class CodeExpander {
 private:  
   enum bin_op_t { ADD, SUB, MUL };
 
-  Value *mkBinOp(bin_op_t Op, IRBuilder<> B, Value *LHS, Value *RHS,
+  static Value *mkBinOp(bin_op_t Op, IRBuilder<> B, Value *LHS, Value *RHS,
 		 const Twine &Name) {
     assert(LHS->getType()->isIntegerTy() && RHS->getType()->isIntegerTy());
     switch (Op) {
@@ -117,19 +208,19 @@ private:
     }
   }
 
-  Value *mkNum(number_t n, IntegerType *ty, LLVMContext &ctx) {
+  static Value *mkNum(number_t n, IntegerType *ty, LLVMContext &ctx) {
     return ConstantInt::get(ty, n.get_str(), 10);
   }
 
-  Value *mkVar(varname_t v) {
+  static Value *mkVar(varname_t v) {
     return (v.get() ? const_cast<Value *>(*(v.get())) : nullptr);
   }
 
-  Value *mkBool(LLVMContext &ctx, bool val) {
+  static Value *mkBool(LLVMContext &ctx, bool val) {
     return ConstantInt::get(Type::getInt1Ty(ctx), (val) ? 1U : 0U);
   }
 
-  IntegerType *getIntType(varname_t var) {
+  static IntegerType *getIntType(varname_t var) {
     if (!var.get()) {
       return nullptr;
     } else {
@@ -141,9 +232,144 @@ private:
     return nullptr;
   }
   
+  //###############################################################################
+  // function by sofia-------------------------------
+  static Value *cstToValue(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx, const Twine &Name, 
+                      IntegerType *ty, bool equality, bool inequality, bool strict_inequality, bool change_constant = false) {
+    
+    auto e = cst.expression() - cst.expression().constant();
+
+    Value *ee = mkNum(number_t("0"), ty, ctx);
+    for (auto t : e) {
+      //for each term in the expression
+      number_t n = t.first;
+      if (n == 0){ 
+        continue;
+      }
+      if (mayOverflow(n, ty->getBitWidth())) {
+        out << "Dismissed as overflow case\n";
+	      return nullptr;
+      }
+      varname_t v = t.second.name();
+      Value *vv = mkVar(v);
+      assert(vv);
+      assert(vv->getType()->isIntegerTy());
+      if (n == 1) {
+        ee = mkBinOp(ADD, B, ee, vv, Name);
+      } else if (n == -1) {
+        ee = mkBinOp(SUB, B, ee, vv, Name);
+      } else {
+        ee = mkBinOp(ADD, B, ee,
+            mkBinOp(MUL, B, mkNum(n, ty, ctx), vv, Name), Name);
+      }
+      assert(ee);
+    }
+
+    number_t c = -cst.expression().constant();
+    // assuming linear constraints are in the form a1x1 + a2x2 +...+ constant <=/=/!=  0
+
+    // HACK: skip constraints whose rhs that do not fit into ty
+    if (mayOverflow(c, ty->getBitWidth())) {
+      out << "Dismissed as overflow case\n";
+      return nullptr;
+    }
+
+    Value *cc = mkNum(c, ty, ctx);
+
+ 
+    if (change_constant){
+      auto max = int64_t(crab::wrapint::get_signed_max(ty->getBitWidth()).get_signed_bignum());
+      auto min = int64_t(crab::wrapint::get_signed_min(ty->getBitWidth()).get_signed_bignum());
+      int64_t new_constant = int64_t(c);
+      //change (a1x1 +...+ anxn <= c)  to (a1x1 +...+ anxn <= c + a  (or -a)) 
+      
+      if (Mode == "stronger"){
+        // (c - a >= min)  -> (a >= -min - c) -> a >= max + c
+        //max_a = max + c, overflow check:
+        int64_t max_a;
+        if (c>=0){
+          max_a = max ;  //if we add (max + c) it will overflow
+        }
+        else{
+          max_a = max + int64_t(c); //overflow not possible
+        }
+
+        //if max_a is a 32 bit integer
+        if (max_a < 2147483647){
+          new_constant -= int64_t(throw_dice(int(max_a)));
+        }
+        else{
+          new_constant -= int64_t(throw_dice(2147483647));
+        }
+      }
+      else{ //weaker
+        // looking for a random constant a>0 :
+        // (c + a <= max)  -> (a <= max - c)
+        int64_t max_a = max - int64_t(c);
+        //if max_a is 32bit integer (or less)
+        if (max_a < 2147483647){
+          new_constant += throw_dice(int(max_a));
+        }
+        else{
+          new_constant += throw_dice(2147483647);
+        }
+      }
+      
+      //cc = mkNum(number_t(new_constant), ty, ctx);
+      out<< "making constraint "<< Mode <<": from <="<< int64_t(c)<<" to <="<<new_constant<<"\n";
+    }
+
+
+
+    //sofia: print assumption with transformation--------------
+    if(equality){
+      out << "Constraint turned to equality (=) \n"; 
+      return B.CreateICmpEQ(ee, cc, Name);
+    }
+
+    else if (inequality){
+      bool coin = flip_a_coin();
+      if (coin){
+        out << "Constraint turned to inequality (<=) \n"; 
+        return B.CreateICmpSLE(ee, cc, Name);
+      }
+      else{
+        out << "Constraint turned to inequality (>=) \n"; 
+        return B.CreateICmpSGE(ee, cc, Name);
+      }
+    }
+
+    else if (strict_inequality){
+      out << "Constraint turned to strict inequality (<) \n"; 
+      return B.CreateICmpSLT(ee, cc, Name);
+    }
+
+    //----------------------------------------------------------
+    out << "Constraint as it was \n";
+    if (cst.is_inequality()) {        // inequality
+      return B.CreateICmpSLE(ee, cc, Name);
+    } 
+    else if (cst.is_equality()) {        // equality
+      return B.CreateICmpEQ(ee, cc, Name);
+    } 
+    else {        // not equal
+      return B.CreateICmpNE(ee, cc, Name);
+    }
+  }
+  //###############################################################################
+
+  static bool mayOverflow (const number_t &n, crab::wrapint::bitwidth_t b) {
+    auto max = crab::wrapint::get_signed_max(b).get_signed_bignum();
+    auto min = crab::wrapint::get_signed_min(b).get_signed_bignum();
+    out<<"max = "<<int64_t(max)<<", min = "<<int64_t(min)<<"\n";
+    return (n < min || n > max);
+  };
+
+
+
   // post: return a value of bool type(Int1Ty) that contains the
   // computation of cst
-  Value *genCode(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
+  static Value *genCode(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
 		 DominatorTree *DT, const Twine &Name) {
     if (cst.is_tautology()) {
       return nullptr; // mkBool(ctx, true);
@@ -163,11 +389,9 @@ private:
         }
       }
     }
-
     if (!ty) {
       return nullptr;
     }
-
     // more sanity checks before we insert the invariants
     for (auto t : cst.expression()) {
       varname_t v = t.second.name();
@@ -196,37 +420,166 @@ private:
         return nullptr;
       }
     }
-
-    auto e = cst.expression() - cst.expression().constant();
-    Value *ee = mkNum(number_t("0"), ty, ctx);
-    for (auto t : e) {
-      number_t n = t.first;
-      if (n == 0)
-        continue;
-      varname_t v = t.second.name();
-      Value *vv = mkVar(v);
-      assert(vv);
-      assert(vv->getType()->isIntegerTy());
-      if (n == 1) {
-        ee = mkBinOp(ADD, B, ee, vv, Name);
-      } else if (n == -1) {
-        ee = mkBinOp(SUB, B, ee, vv, Name);
-      } else {
-        ee = mkBinOp(ADD, B, ee,
-		     mkBinOp(MUL, B, mkNum(n, ty, ctx), vv, Name), Name);
+      
+// CODE BY SOFIA ###################################################################
+    log_info(B.GetInsertBlock(), cst);  //always log info
+    
+    bool transform = flip_a_coin();
+    int dice = throw_dice(2);
+    if (Seed == -1) {
+      transform = false;
+    } 
+    //========================================================================
+    // STRONGER TRANSFORMATION
+    //========================================================================
+    if (transform && Mode == "stronger"){
+      
+      if (cst.is_inequality()){
+        dice = throw_dice(4);
+        switch (dice){
+          case 0: 
+          { 
+            //assume False
+            out << "Assume FALSE \n"; 
+            Value *false_v = mkNum(number_t("0"), Type::getInt1Ty(ctx), ctx);
+            return false_v; //do not print the assumption
+          }
+          case 1:
+          { 
+            // inequality (<=) to equality (=)
+            return cstToValue(cst, B, ctx, Name, ty, true, false, false);
+          }
+          case 2:
+          { 
+            // inequality (<=) to strict inequality (<)
+            return cstToValue(cst, B, ctx, Name, ty, false, false, true);
+          }
+          case 3:
+          { 
+            // change constant (x <= a) -> (x <= a - c)
+            //currently as it is
+            return cstToValue(cst, B, ctx, Name, ty, false, false, false, true);
+          }
+          default:
+          { 
+            // leave it as it is
+            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+          }
+        }
       }
+
+      else if (cst.is_equality()){
+        //assume False
+        out << "Assume FALSE \n"; 
+        Value *false_v = mkNum(number_t("0"), Type::getInt1Ty(ctx), ctx);
+        return false_v; //do not print the assumption
+      }
+
+      else {  //non equality
+        //assume False
+        out << "Assume FALSE \n"; 
+        Value *false_v = mkNum(number_t("0"), Type::getInt1Ty(ctx), ctx);
+        return false_v; //do not print the assumption
+      }
+
+      /*if (dice == 0){ 
+        out << "Assume FALSE \n"; 
+        Value *false_v = mkNum(number_t("0"), Type::getInt1Ty(ctx), ctx);
+        return false_v; //do not print the assumption
+      }
+      else {
+        if (cst.is_inequality()){ 
+          if(flip_a_coin()){ 
+            //make an inequality -> equality  (<=  -> =)            
+            return cstToValue(cst, B, ctx, Name, ty, true, false, false);
+          }
+          else { 
+            return cstToValue(cst, B, ctx, Name, ty, false, false, true);
+          }
+        }
+        //else no transformation
+        else
+          return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+      }*/
+    }   
+    //========================================================================
+    // WEAKER TRANSFORMATION
+    //========================================================================
+    else if (transform && Mode == "weaker"){
+      if (cst.is_inequality()){
+        dice = throw_dice(2);
+        switch (dice){
+          case 0:
+          {
+            //drop constraint
+            out << "Constraint Dropped\n";
+            return nullptr; //do not print the assumption
+          }
+          case 1:
+          {
+            // change constant (x <= a) -> (x <= a + c)
+            //currently as it is
+            return cstToValue(cst, B, ctx, Name, ty, false, false, false, true);
+          }
+          default:
+            // leave it as it is
+            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+        }
+      }
+      else if (cst.is_equality()){
+        dice = throw_dice(2);
+        switch (dice){
+          case 0:
+          {
+            //drop constraint
+            out << "Constraint Dropped\n";
+            return nullptr; //do not print the assumption
+          }
+          case 1:
+          { 
+            // turn quality (x = a) to inequality (x <= a + c)
+            return cstToValue(cst, B, ctx, Name, ty, false, true, false);
+          }
+          default:
+            // leave it as it is
+            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+        }
+      }
+      else {  //non equality
+        //drop constraint
+        out << "Constraint Dropped\n";
+        return nullptr; //do not print the assumption
+      }
+
+      /* 
+      if (dice == 0){ 
+        out << "Constraint Dropped\n";
+        return nullptr; //do not print the assumption
+      }
+      else {
+        //make an equality -> inequality
+        if (cst.is_equality())
+          return cstToValue(cst, B, ctx, Name, ty, false, true, false);
+        //else no transformation
+        else
+          return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+      }
+    */
+    }
+    //========================================================================
+    // NO TRANSFORMATION
+    //========================================================================
+    else if (! transform) { 
+        return cstToValue(cst, B, ctx, Name, ty, false, false, false);
     }
 
-    number_t c = -cst.expression().constant();
-    Value *cc = mkNum(c, ty, ctx);
-    if (cst.is_inequality()) {
-      return B.CreateICmpSLE(ee, cc, Name);
-    } else if (cst.is_equality()) {
-      return B.CreateICmpEQ(ee, cc, Name);
-    } else {
-      return B.CreateICmpNE(ee, cc, Name);
-    }
+    else return nullptr; //in case something went wrong
+//-------------------------------------------------------------------------------  
   }
+
+  //###############################################################################
+  //###############################################################################
+
 public:
   /** Generate llvm bitcode from a set of linear constraints.
    *
@@ -239,7 +592,7 @@ public:
    **/
   bool genCode(lin_cst_sys_t csts, IRBuilder<> B, LLVMContext &ctx,
 	       Function *assumeFn, CallGraph *cg, DominatorTree *DT,
-	       const Function *insertFun, const Twine &Name = "") {
+	       const Function *insertFun, const Twine &Name = "") const{
     bool change = false;
     for (auto cst : csts) {
       if (Value *cst_code = genCode(cst, B, ctx, DT, Name)) {
@@ -593,7 +946,18 @@ bool Optimizer::runOnModule(Module &M) {
 
   CRAB_VERBOSE_IF(1, crab::get_msg_stream()
 		  << "Starting clam optimizer based on invariants.\n";);
-  
+
+
+  //CODE BY SOFIA-------------------------------------------------------
+  std::string log_file = Subfolder + "/log.txt";
+  out.open(log_file);
+  out<<"-------------------------------------------------\n";
+  out<<"SEED : "<< Seed <<"\n";
+  out<<"PERCENTAGE : "<< Percentage <<"%\n";
+  out<<"TRANSFORMATION MODE : "<< Mode <<"\n";
+   out<<"-------------------------------------------------\n\n";
+  //--------------------------------------------------------------------
+
   LLVMContext &ctx = M.getContext();
   AttrBuilder B;
   B.addAttribute(Attribute::NoUnwind);
@@ -612,12 +976,19 @@ bool Optimizer::runOnModule(Module &M) {
   }
   
   bool change = false;
+  
   for (auto &f : M) {
     change |= runOnFunction(f);
   }
 
   CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-		  << "Finished clam optimizer based on invariants.\n";);    
+		  << "Finished clam optimizer based on invariants.\n";); 
+
+ 
+  //CODE BY SOFIA------------------------------------------------------
+  out.close();
+  //--------------------------------------------------------------------
+     
   return change;
 }
 
@@ -723,9 +1094,14 @@ bool Optimizer::runOnFunction(Function &F) {
 }
   
 /* Pass code starts here */
-  
+
+// changed by Jorge-------------------------------------------------------
 OptimizerPass::OptimizerPass():
-  ModulePass(ID), m_impl(nullptr) {}
+  ModulePass(ID), m_impl(nullptr), m_clam(nullptr) {}
+
+OptimizerPass::OptimizerPass(ClamGlobalAnalysis *clam):
+  ModulePass(ID), m_impl(nullptr), m_clam(clam) {}
+//------------------------------------------------------------------------
   
 bool OptimizerPass::runOnModule(Module &M) {
   if (InvLoc == InvariantsLocation::NONE &&
@@ -740,8 +1116,12 @@ bool OptimizerPass::runOnModule(Module &M) {
     cg = &cgwp->getCallGraph();
   }
 
+  //added by jorge-----------------------------------------------
   // Get clam
-  ClamPass &clam = getAnalysis<ClamPass>();
+  if (!m_clam) {
+     m_clam = &(getAnalysis<ClamPass>().getClamGlobalAnalysis());
+  }
+  //---------------------------------------------------------------
 
   // Collect all the dominator tree and loop info in maps
   DenseMap<Function*, DominatorTree*> dt_map;
@@ -754,7 +1134,8 @@ bool OptimizerPass::runOnModule(Module &M) {
       li_map[&F] = &(getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo());
   }
 
-  m_impl.reset(new Optimizer(clam.getClamGlobalAnalysis(), cg,
+
+  m_impl.reset(new Optimizer(*m_clam, cg,
 			     [&dt_map](Function *F) {
 			       auto it = dt_map.find(F);
 			       return (it != dt_map.end() ? it->second : nullptr);
@@ -768,7 +1149,11 @@ bool OptimizerPass::runOnModule(Module &M) {
 }
 
 void OptimizerPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<clam::ClamPass>();
+  //changed by Jorge----------------------------------------
+  if (!m_clam) {
+     AU.addRequired<clam::ClamPass>();
+  }
+  //---------------------------------------------------------
   AU.addRequired<UnifyFunctionExitNodes>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addPreserved<CallGraphWrapperPass>();
@@ -781,8 +1166,15 @@ void OptimizerPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 char clam::OptimizerPass::ID = 0;
-llvm::Pass *createOptimizerPass() {
-  return new OptimizerPass();
+
+
+// modified by Jorge---------------------------------------------------
+llvm::Pass *createOptimizerPass(ClamGlobalAnalysis *clam = nullptr, int seed=0, std::string mode="stronger", std::string subfolder="") {
+  std::srand(seed);   //probably working, added by sofia
+  Seed = seed;              // sofia
+  Mode = mode;              // sofia
+  Subfolder = subfolder;    // sofia
+  return new OptimizerPass(clam);
 }
  
 } // namespace clam

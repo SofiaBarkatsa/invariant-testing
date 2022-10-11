@@ -454,6 +454,62 @@ def parseArgs(argv):
     p.add_argument('--crab-sanity-checks',
                     help='Enable clam and crab sanity checks',
                     dest='crab_sanity_checks', default=False, action='store_true')
+    
+    
+    #########################################################################
+    # OPTIONS BY SOFIA
+    #########################################################################
+    
+    p.add_argument('--percentage',
+                    help='Percentage of Transformations to be Made',
+                    dest='percentage', type=int, default=50)
+    
+    p.add_argument('--inv-folder',
+                    help='Invariant folder coresponding to the core calling clam',
+                    dest='inv_folder', default="/invariants/core_0")
+
+    p.add_argument('--num-of-files',
+                    help='Number of files to be produced',
+                    dest='num_of_files', type=int, default=2)
+
+    p.add_argument('--domain',
+                help="Abstract domain for transformed files:\n"
+                        "- int: intervals\n"
+                        "- sign-const: reduced product of sign and constant domains\n"
+                        "- ric: reduced product of intervals and congruences\n"
+                        "- term-int: int with uninterpreted functions\n"
+                        "- dis-int: disjunctive intervals based on Clousot's DisInt domain\n"
+                        "- term-dis-int: dis-int with uninterpreted functions\n"
+                        "- boxes: disjunctive intervals based on LDDs\n"
+                        "- zones: zones domain using DBMs in Split Normal Form\n"
+                        "- soct: octagons domain using DBMs in Split Normal Form\n"
+                        "- oct: octagons domain from Apron or Elina\n"
+                        "- pk: polyhedra domain from Apron or Elina\n"
+                        "- rtz: reduced product of term-dis-int with zones\n"
+                        "- w-int: wrapped intervals\n",
+                choices=['int', 'sign-const', 'ric', 'term-int',
+                            'dis-int', 'term-dis-int', 'boxes',
+                            'zones', 'soct', 'oct', 'pk', 'rtz',
+                            'w-int'],
+                default='zones')
+
+    p.add_argument('--c-track',
+                help='Track integers (num), num + singleton memory objects (sing-mem), and num + all memory objects (mem)',
+                choices=['num', 'sing-mem', 'mem'], dest='ctrack', default='num')
+    
+    p.add_argument('--c-analysis',
+                help='Crab Analysis Options = {inter, intra, backward}',
+                choices=["inter", "intra", "backward"], dest='canalysis', default='intra')
+
+    p.add_argument('--c-widening-delay', help='Crabs widening delay',
+                    dest='c_widening_delay', type=int, default=1)
+    
+    p.add_argument('--c-narrowing-iterations', help='Crabs narrowing-iterations',
+                    dest='c_narrowing_iterations', type=int, default=10)
+    
+    p.add_argument('--c-widening-jump-set', help='Crabs widening-jump-set',
+                    dest='c_widening_jump_set', type=int, default=0)
+    
     ######################################################################
     # Hidden options
     ######################################################################
@@ -485,6 +541,7 @@ def parseArgs(argv):
         p.error("Unknown option -m%s" % args.machine)
 
     return args
+
 
 def createWorkDir(dname = None, save = False):
     if dname is None:
@@ -812,7 +869,9 @@ def crabpp(in_name, out_name, args, extra_args=[], cpu = -1, mem = -1):
     elif segfault or unknown or returnvalue != 0:
         sys.exit(PP_ERROR)
 
-# Run clam
+# Run clam --------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------
+
 def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
     clam_args = [ getClam(), in_name, '-oll', out_name]
     clam_args = clam_args + extra_opts
@@ -967,7 +1026,22 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
         clam_args.append('--crab-dot-cfg=false')
     if args.crab_out_name is not None:
         clam_args.append('--ocrab={0}'.format(args.crab_out_name))
-        
+    
+
+    # SOFIA OPTIONS:
+    #these parameters are always appended
+    clam_args.append('--percentage={0}'.format(args.percentage))
+    clam_args.append('--inv_folder={0}'.format(args.inv_folder))
+    clam_args.append('--num_of_files={0}'.format(args.num_of_files))
+    clam_args.append('--domain={0}'.format(args.domain))
+    clam_args.append('--c_track={0}'.format(args.ctrack))
+    clam_args.append('--c_analysis={0}'.format(args.canalysis))
+
+    clam_args.append('--c_widening_delay={0}'.format(args.c_widening_delay))
+    clam_args.append('--c_narrowing_iterations={0}'.format(args.c_narrowing_iterations))
+    clam_args.append('--c_widening_jump_set={0}'.format(args.c_widening_jump_set))
+
+
     # begin hidden options
     if args.crab_dsa_unknown: clam_args.append('--crab-dsa-disambiguate-unknown')
     if args.crab_dsa_ptr_cast: clam_args.append('--crab-dsa-disambiguate-ptr-cast')

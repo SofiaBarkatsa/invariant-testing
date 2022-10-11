@@ -3,6 +3,21 @@
 #include "clam/config.h"
 #include "llvm/Pass.h"
 
+
+#include "clam/Clam.hh"
+
+#include "seadsa/InitializePasses.hh"
+#include "seadsa/support/RemovePtrToInt.hh"
+
+#include "seadsa/AllocWrapInfo.hh"
+#include "seadsa/DsaLibFuncInfo.hh"
+#include "clam/CfgBuilder.hh"
+#include "clam/HeapAbstraction.hh"
+#include "clam/SeaDsaHeapAbstraction.hh"
+#include "clam/Support/NameValues.hh"
+
+#include <string> 
+
 namespace clam {
 // Preprocessor passes
 llvm::Pass *createInsertEntryPointPass();  
@@ -27,7 +42,9 @@ llvm::Pass *createAnnotatedCFGPrinterPass();
 llvm::Pass *createNullCheckPass();
 llvm::Pass *createUseAfterFreeCheckPass();
 // Postprocessing passes
-llvm::Pass *createOptimizerPass();  
+llvm::Pass *createOptimizerPass(ClamGlobalAnalysis*, int, std::string, std::string);  //sofia changed this
+llvm::Pass *createDeleteAssumePass();   //sofia added this
+llvm::Pass *createDeleteCrabCommandPass();   //sofia added this
 } // namespace clam
 
 #ifdef HAVE_LLVM_SEAHORN

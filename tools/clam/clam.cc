@@ -29,7 +29,24 @@
 #include "seadsa/InitializePasses.hh"
 #include "seadsa/support/RemovePtrToInt.hh"
 
+#include "seadsa/AllocWrapInfo.hh"
+#include "seadsa/DsaLibFuncInfo.hh"
+#include "clam/CfgBuilder.hh"
+#include "clam/HeapAbstraction.hh"
+#include "clam/SeaDsaHeapAbstraction.hh"
+#include "clam/Support/NameValues.hh"
+
+
+#include <type_traits>
+#include <stdlib.h>  
+#include <string> 
+#include <fstream>
+#include "llvm/Transforms/Utils/Cloning.h"
+
 extern llvm::cl::OptionCategory ClamOptCat;
+
+// REVISIT
+// Add here more user options for choosing clam abstract domain or other analysis options
 
 static llvm::cl::opt<std::string>
     InputFilename(llvm::cl::Positional,
@@ -130,6 +147,47 @@ static llvm::cl::opt<bool>
 	     llvm::cl::cat(ClamOptCat));
 
 
+// PARAMETERS BY SOFIA ----------------------------------------------------------------------------
+static llvm::cl::opt<int>
+    NumOfFiles("num_of_files",
+             llvm::cl::desc("Percentage for Transformations"),
+             llvm::cl::init(2));
+
+static llvm::cl::opt<std::string>
+    InvFolder("inv_folder",
+             llvm::cl::desc("Invariant folder coresponding to the core calling clam"));
+
+static llvm::cl::opt<std::string>
+    Domain("domain",
+             llvm::cl::desc("Abstruct domain to call clam analysis with"));
+
+static llvm::cl::opt<std::string>
+    CTrack("c_track",
+             llvm::cl::desc("Crab-track = {num, mem, ...}"));
+
+static llvm::cl::opt<std::string>
+    CAnalysis("c_analysis",
+             llvm::cl::desc("Inter, Intra or Backward"));
+
+static llvm::cl::opt<int>
+    CWideningDelay("c_widening_delay",
+             llvm::cl::desc("c_widening_delay"),
+             llvm::cl::init(1));
+
+static llvm::cl::opt<int>
+    CNarrowingIterations("c_narrowing_iterations",
+             llvm::cl::desc("c_narrowing_iterations"),
+             llvm::cl::init(10));
+
+static llvm::cl::opt<int>
+    CWideningJumpSet("c_widening_jump_set",
+             llvm::cl::desc("c_widening_jump_set"),
+             llvm::cl::init(0));
+
+std::string InitialOutputFilename;
+//-------------------------------------------------------------------------------------------------
+
+
 using namespace clam;
 
 // removes extension from filename if there is one
@@ -140,6 +198,116 @@ std::string getFileName(const std::string &str) {
     filename = str.substr(0, lastdot);
   return filename;
 }
+
+std::unique_ptr<CrabBuilderManager> mkCrabBuilderManager(llvm::Module &module,
+							 llvm::TargetLibraryInfoWrapperPass &TLIW) {
+
+  //////////////////////////////////////
+  // Run seadsa -- pointer analysis
+  //////////////////////////////////////  
+  llvm::CallGraph cg(module);
+  seadsa::AllocWrapInfo allocWrapInfo(&TLIW);
+  allocWrapInfo.initialize(module, nullptr);
+  seadsa::DsaLibFuncInfo dsaLibFuncInfo;
+  dsaLibFuncInfo.initialize(module);
+  std::unique_ptr<HeapAbstraction> mem(new SeaDsaHeapAbstraction(
+		module, cg, TLIW, allocWrapInfo, dsaLibFuncInfo, true));
+
+  //////////////////////////////////////  
+  // Create CrabIR from LLVM 
+  //////////////////////////////////////
+  
+  /// Translation from LLVM to CrabIR
+  CrabBuilderParams cparams;
+  // Translate all memory operations using seadsa
+  //cparams.setPrecision(clam::CrabBuilderPrecision::MEM);
+  // Deal with unsigned comparisons
+  
+  cparams.lowerUnsignedICmpIntoSigned();
+  //==============================================================//  
+  // REVISIT: we might need to set more CFG builder options here  Sofia:
+  // look at include/clam/CFGBuilderParams.hh
+  //==============================================================//  
+
+  // Translate all memory operations using seadsa
+  if (CTrack == "mem")
+    cparams.setPrecision(clam::CrabBuilderPrecision::MEM);
+  else if (CTrack == "num")
+    cparams.setPrecision(clam::CrabBuilderPrecision::NUM);
+  else  //sing-mem
+    cparams.setPrecision(clam::CrabBuilderPrecision::SINGLETON_MEM);
+
+
+  //==================================================================
+  std::unique_ptr<CrabBuilderManager> man =
+    std::make_unique<CrabBuilderManager>(cparams, TLIW, std::move(mem));
+  return std::move(man);
+}
+
+
+std::unique_ptr<ClamGlobalAnalysis> mkClamGlobalAnalysis(llvm::Module &M, CrabBuilderManager &man) {
+  
+  /// Set Crab parameters
+  AnalysisParams aparams;
+
+  // Check for assertions
+  aparams.check = clam::CheckerKind::ASSERTION;
+  
+  //==============================================================//
+  // REVISIT: we might need to set more analysis options here  Sofia:
+  //==============================================================//  
+  
+  if (Domain == "int")
+    aparams.dom = CrabDomain::INTERVALS;
+  else if (Domain == "w-int")
+    aparams.dom = CrabDomain::WRAPPED_INTERVALS;
+  else if (Domain == "boxes")
+    aparams.dom = CrabDomain::BOXES;
+  else if (Domain == "zones")
+    aparams.dom = CrabDomain::ZONES_SPLIT_DBM;
+  else if (Domain == "soct")
+    aparams.dom = CrabDomain::OCT_SPLIT_DBM;
+  else { 
+    llvm::errs()<<"Sofia: Domain : "<<Domain<<" is not supported yet. Switching to zones\n";
+    aparams.dom = CrabDomain::ZONES_SPLIT_DBM;
+  }
+
+  if (CAnalysis == "inter"){
+  // Enable inter-procedural analysis
+    aparams.run_inter = true;    
+  }
+  else if (CAnalysis == "backward"){
+  // Enable backward-procedural analysis
+    aparams.run_backward = true; 
+  }
+
+  aparams.widening_delay = CWideningDelay;
+  aparams.narrowing_iters = CNarrowingIterations;
+  aparams.widening_jumpset = CWideningJumpSet;
+
+  llvm::errs()<<"CWideningDelay="<<CWideningDelay<<", CNarrowingIterations="<<CNarrowingIterations<<", CWideningJumpSet="<<CWideningJumpSet<<"\n";
+
+  if (CAnalysis == "inter"){ 
+    /// Create an inter-analysis instance 
+    std::unique_ptr<ClamGlobalAnalysis> ga = std::make_unique<InterGlobalClam>(M, man);
+    /// Run the Crab analysis
+    ClamGlobalAnalysis::abs_dom_map_t assumptions;
+    ga->analyze(aparams, assumptions);
+    return std::move(ga);
+  }
+  else {  
+    //llvm::errs()<<CAnalysis<<"\n";
+
+    /// Create an intra-analysis instance 
+    std::unique_ptr<ClamGlobalAnalysis> ga = std::make_unique<IntraGlobalClam>(M, man);
+    /// Run the Crab analysis
+    ClamGlobalAnalysis::abs_dom_map_t assumptions;
+    ga->analyze(aparams, assumptions);
+    return std::move(ga);
+  }
+}
+
+
 
 int main(int argc, char **argv) {
   llvm::llvm_shutdown_obj shutdown; // calls llvm_shutdown() on exit
@@ -305,33 +473,25 @@ int main(int argc, char **argv) {
     if (UafCheck)
       pass_manager.add(clam::createUseAfterFreeCheckPass());
     /// -- run the crab analyzer
-    pass_manager.add(new clam::ClamPass());
-    if (DotLLVMCFG)
-      pass_manager.add(createAnnotatedCFGPrinterPass());
-  }
-
-  if (!AsmOutputFilename.empty()) {
-    pass_manager.add(createPrintModulePass(asmOutput->os()));
-  }
-
-  if (!DisableCrab && CrabOpt) {
-    // post-processing of the bitcode using Crab invariants
-    pass_manager.add(clam::createOptimizerPass());
-
-    //// Cleanup
-    // -- simplify invariants added in the bitecode.
-    pass_manager.add(clam::createInstCombine());
-    // -- remove dead edges and blocks
-    pass_manager.add(llvm::createCFGSimplificationPass());
-    // -- remove global strings and values
-    pass_manager.add(llvm::createGlobalDCEPass());
+    //clam = new clam::ClamPass();
     
-    if (PromoteAssume) {
-      // -- promote verifier.assume to llvm.assume intrinsics
-      pass_manager.add(clam::createPromoteAssumePass());
+    // run Claam Analysis only if Optimizer is not calles
+    if (!CrabOpt){ 
+      pass_manager.add(new clam::ClamPass()); // pass_manager owns clam!  
+      if (DotLLVMCFG)
+        pass_manager.add(createAnnotatedCFGPrinterPass());
     }
   }
 
+  //#####################  sofia
+  if (PromoteAssume) {
+    // -- promote verifier.assume to llvm.assume intrinsics
+    pass_manager.add(clam::createPromoteAssumePass());
+  }
+  //##############################
+
+  pass_manager.add(new clam::NameValues());
+  
   if (!OutputFilename.empty()) {
     if (OutputAssembly)
       pass_manager.add(createPrintModulePass(output->os()));
@@ -339,12 +499,174 @@ int main(int argc, char **argv) {
       pass_manager.add(createBitcodeWriterPass(output->os()));
   }
 
+  if (!AsmOutputFilename.empty()) {
+    pass_manager.add(createPrintModulePass(asmOutput->os()));
+  } 
+  
   pass_manager.run(*module.get());
 
-  if (!AsmOutputFilename.empty())
+  if (!AsmOutputFilename.empty())  
     asmOutput->keep();
   if (!OutputFilename.empty())
     output->keep();
+  
+  if (!CrabOpt)
+    return 0;
+
+  // if CrabOpt NOT enabled, then return here-------------------- Sofia --------
+
+  //---------------------------------------------------------------------------
+
+  // At this point we have run (using pass_manager) all the passes
+  // that should be run before ClamPass.
+  // 
+  // Now instead of running Clam via a LLVM pass (i.e., ClamPass) we
+  // directly create an instance of ClamGlobalAnalysis and run it on
+  // the module. This is needed because we want to extend the lifetime
+  // of this Clam analysis object until the end of this program so
+  // that we can pass it to createOptimizerPass. The method "run" of
+  // pass_manager deletes all the analysis passed via the "add" method
+  // upon completion so that's why we cannot run Clam as a LLVM pass
+  // if we want to use it later.
+  const auto& tripleS = module->getTargetTriple();
+  llvm::Twine tripleT(tripleS);
+  llvm::Triple triple(tripleT);
+  llvm::TargetLibraryInfoWrapperPass  TLIW(triple);  
+  std::unique_ptr<CrabBuilderManager> clam_man = mkCrabBuilderManager(*module.get(), TLIW);
+  std::unique_ptr<ClamGlobalAnalysis> clam_analysis = mkClamGlobalAnalysis(*module.get(), *clam_man);
+
+
+  /// Jorge: this is just to show that we can get the invariants from clam_analysis
+  crab::outs() << "===Invariants at the entry of each block===\n";
+  for (auto &f: *module.get()) {
+    for (auto &b: f) {
+      llvm::Optional<clam_abstract_domain> dom = clam_analysis->getPre(&b, false);
+      if (dom.hasValue()) {
+        crab::outs() << f.getName() << "#" << b.getName() << ":\n  " << dom.getValue() << "\n";
+        crab::outs() << f.getName() << "#" << b.getName() << ":\n  " << dom.getValue().to_linear_constraint_system() << "\n";
+      }
+    }
+  }
+  crab::outs() <<"\n\n";
+
+// test Numair's idea##############################
+  std::unique_ptr<llvm::ToolOutputFile> output3;
+  std::string OutputFilename1;
+    if (!OutputFilename.empty()){ 
+      OutputFilename1 = InvFolder + "/initial.bc";
+      llvm::errs()<<OutputFilename1<<"\n";
+    }
+  
+  if (!OutputFilename.empty()){ 
+    output3 = std::make_unique<llvm::ToolOutputFile>(
+      OutputFilename1.c_str(), error_code, llvm::sys::fs::F_None);
+  }
+
+  llvm::legacy::PassManager pass_manager2;  
+  
+  pass_manager2.add(clam::createDeleteAssumePass());
+  pass_manager2.add(clam::createDeleteCrabCommandPass());
+  
+  if (!DisableCrab && CrabOpt) {
+    // post-processing of the bitcode using Crab invariants
+    pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), -1, "weaker", InvFolder));
+  }
+
+  if (!OutputFilename.empty()) {
+      pass_manager2.add(createBitcodeWriterPass(output3->os()));
+  }
+
+  pass_manager2.run(*module.get()); 
+
+  if (!OutputFilename.empty()){ 
+    output3->keep();
+  }
+//end of Numair's idea ################################
+  
+  
+  //modifications by sofia if CrabOpt enabled
+  for (int i=0; i<NumOfFiles; i++){ 
+    //sofia------ create new params ------------------------------
+    std::unique_ptr<llvm::ToolOutputFile> output2;
+
+    std::srand((unsigned int)time(NULL));
+    int seed = rand()%1000000 + i;
+    
+    std::string mode = (i < NumOfFiles / 2) ? "stronger" : "weaker"; 
+
+    std::string subfolder = InvFolder + "/" + mode + "_" + std::to_string(i);  
+
+    // Need to change the name of .bc output    
+    std::string newOutputFilename;
+    if (!OutputFilename.empty()){ 
+      //1) clam/invariants/core_0/transformed.bc --> transformed.bc
+      newOutputFilename = OutputFilename.substr(InvFolder.size() + 1, OutputFilename.size()-(InvFolder.size() + 1));
+      //2) transformed.bc --> transformed
+      newOutputFilename = newOutputFilename.substr(0, newOutputFilename.size()-3);
+      //3) transformed.bc --> transformed_stronger_0.bc
+      newOutputFilename = newOutputFilename + "_" + mode + "_" + std::to_string(i) + ".bc" ;
+      //4) transformed_stronger_0.bc --> clam/invariants/core_0/stronger_0/transformed_stronger_0.bc
+      newOutputFilename = subfolder + "/" + newOutputFilename;
+    }
+    //-------------------------------------------------------------
+    
+    //sofia------ output ----------------------------------
+    if (!OutputFilename.empty())
+      output2 = std::make_unique<llvm::ToolOutputFile>( newOutputFilename.c_str(), error_code, llvm::sys::fs::F_None);
+
+    if (error_code) {
+      if (llvm::errs().has_colors())
+        llvm::errs().changeColor(llvm::raw_ostream::RED);
+      llvm::errs() << "error: Could not open " << OutputFilename << ": "
+                  << error_code.message() << "\n";
+      if (llvm::errs().has_colors())
+        llvm::errs().resetColor();
+      return 3;
+    }
+    //-----------------------------------------------------------------
+    
+    
+    //new Pass Manager--------------------------------------------
+    llvm::legacy::PassManager pass_manager2;  
+    
+    pass_manager2.add(clam::createDeleteAssumePass());
+    pass_manager2.add(clam::createDeleteCrabCommandPass());
+    
+
+    if (!DisableCrab && CrabOpt) {
+      // post-processing of the bitcode using Crab invariants
+      pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), seed, mode, subfolder));
+
+      //// Cleanup
+      // -- simplify invariants added in the bitecode.  Sofia:
+      // replaced by delete crab command pass
+      //pass_manager2.add(llvm::createDeadCodeEliminationPass());
+
+      //pass_manager2.add(clam::createInstCombine());   //problem
+      // -- remove dead edges and blocks
+      
+      //pass_manager2.add(llvm::createCFGSimplificationPass());
+      // -- remove global strings and values
+      //pass_manager2.add(llvm::createGlobalDCEPass());
+
+    }
+
+
+   if (!OutputFilename.empty()) {
+        pass_manager2.add(createBitcodeWriterPass(output2->os()));
+    }
+
+    //pass_manager2.run(*module.get()); 
+    pass_manager2.run(*module.get()); 
+
+    //if (!AsmOutputFilename.empty())
+      //asmOutput->keep();
+
+    if (!OutputFilename.empty()){ 
+      output2->keep();
+    }
+  }  
 
   return 0;
 }
+
