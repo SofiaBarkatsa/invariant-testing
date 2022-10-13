@@ -51,3 +51,12 @@ cmake --build . --target crab && cmake ..
 cmake --build . --target llvm && cmake ..           
 cmake --build . --target install 
 ```
+
+### Changes made in Clam:
+- clam_caller.py                      (new)
+- clam_debugger.py                    (new)
+- <b>utils</b>                        (new folder)
+- tools/clam/clam.cc                  (modified)
+- lib/Clam/Optimizer/Optimizer.cc     (modified)
+- lib/Transforms/DeleteAssume.cc      (new)
+- lib/Transforms/DeleteCrabCommand.cc (new)
