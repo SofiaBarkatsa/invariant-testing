@@ -20,5 +20,7 @@
                       "file": "simple_vardep_1.c",
                       "directory": "../c/loop-crafted",
                       "invariants_folder": "",
-                      "seed": 0
+                      "seed": 0,
+                      "project": "seahorn",
+                      "mount_folder": "/pipe"
 }
