@@ -31,6 +31,7 @@
 #include <stdlib.h>  
 #include <string> 
 #include <fstream>
+#include <random>
 
 using namespace llvm;
 
@@ -105,6 +106,23 @@ int throw_dice(int options){
     return 0;
   }
   return rand()%options;
+}
+
+int random_normal(int mean_value, int max_value){
+  std::random_device mch;
+  std::default_random_engine generator(mch());
+  std::normal_distribution<double> distribution(0.0, 5.0);
+  
+  int number = std::ceil(distribution(generator));
+  if (number < max_value && number > mean_value){
+    return number;
+  }
+  else {
+    while (!(number < max_value && number > mean_value) ){
+      number = std::ceil(distribution(generator));
+    }
+    return number;
+  }
 }
 
 
@@ -296,10 +314,10 @@ private:
 
         //if max_a is a 32 bit integer
         if (max_a < 2147483647){
-          new_constant -= int64_t(throw_dice(int(max_a)));
+          new_constant -= random_normal(0, int(max_a));
         }
         else{
-          new_constant -= int64_t(throw_dice(2147483647));
+          new_constant -= random_normal(0, 2147483647);
         }
       }
       else{ //weaker
@@ -308,10 +326,10 @@ private:
         int64_t max_a = max - int64_t(c);
         //if max_a is 32bit integer (or less)
         if (max_a < 2147483647){
-          new_constant += throw_dice(int(max_a));
+          new_constant += random_normal(0, int(max_a));
         }
         else{
-          new_constant += throw_dice(2147483647);
+          new_constant += random_normal(0, 2147483647);
         }
       }
       
