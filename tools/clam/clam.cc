@@ -537,7 +537,7 @@ int main(int argc, char **argv) {
 
 
   /// Jorge: this is just to show that we can get the invariants from clam_analysis
-  crab::outs() << "===Invariants at the entry of each block===\n";
+  /*crab::outs() << "===Invariants at the entry of each block===\n";
   for (auto &f: *module.get()) {
     for (auto &b: f) {
       llvm::Optional<clam_abstract_domain> dom = clam_analysis->getPre(&b, false);
@@ -547,7 +547,7 @@ int main(int argc, char **argv) {
       }
     }
   }
-  crab::outs() <<"\n\n";
+  crab::outs() <<"\n\n";*/
 
 // test Numair's idea##############################
   std::unique_ptr<llvm::ToolOutputFile> output3;

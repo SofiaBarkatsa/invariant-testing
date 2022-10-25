@@ -63,7 +63,7 @@ def get_size(string):
 def randomize_params(core, inv_folder):
     config = inv_folder + "/config.json"
     #options: ------------------------------------------
-    domains = ["w-int","int", "soct", "zones"]
+    domains = ["w-int","int", "soct", "zones"]  
     ctracks = ["sing-mem","num", "mem"]
     analysis = ["inter", "intra", "backward"]  #inter and backward CAN NOT be both TRUE
     inline = [True, False]  
@@ -72,7 +72,9 @@ def randomize_params(core, inv_folder):
     widening_jump_set = [10,20,30,40]
     percentage = [40, 50, 60, 70, 80, 90, 95]
     
-    process_files.update_json(config, "domain", random.choice(domains))
+    #domain used for analysis
+    process_files.update_json(config, "domain", "int")
+    #process_files.update_json(config, "domain", random.choice(domains))
     process_files.update_json(config, "ctrack", random.choice(ctracks))
     process_files.update_json(config, "inline", random.choice(inline))
     process_files.update_json(config, "analysis", random.choice(analysis))
@@ -80,6 +82,13 @@ def randomize_params(core, inv_folder):
     process_files.update_json(config, "widening_delay", random.choice(widening_delay))
     process_files.update_json(config, "widening_jump_set", random.choice(widening_jump_set))
     process_files.update_json(config, "narrowing_iterations", random.choice(narrowing_iterations))
+
+    if process_files.get_value_json(config, "different_domains") == True:
+        domains.remove(process_files.get_value_json(config, "domain"))
+        process_files.update_json(config, "assumption_domain", random.choice(domains))
+    else:
+        domain = process_files.get_value_json(config, "domain")
+        process_files.update_json(config, "assumption_domain", domain)
 
 
 def run(core, inv_folder):
@@ -90,6 +99,7 @@ def run(core, inv_folder):
     domain = process_files.get_value_json(config, "domain")
     file_name = process_files.get_value_json(config, "file")
     directory = process_files.get_value_json(config, "directory")
+    ass_domain = process_files.get_value_json(config, "assumption_domain")
 
     inline = int(process_files.get_value_json(config, "inline")) * "--inline"
     
@@ -194,7 +204,8 @@ def run(core, inv_folder):
         rejected = (result == 2)
 
         print_str = f"{directory}{file_name}  core {core}  "
-        print_str = print_str + f"{TPURPLE}({domain},  {ctrack},  {analysis})  "
+        print_str = print_str + f"{TPURPLE}({ass_domain} -> {domain})  "
+        #print_str = print_str + f"{TPURPLE}({domain},  {ctrack},  {analysis})  "
         print_str = print_str + f"{TBLUE}{transformation_mode}  "
         print_str = print_str + f"{TDEFAULT * (not failed)}{TRED * failed}{warnings} -> {warnings2}  "
         #print_str = print_str + f"{TDEFAULT * (not rejected)}{TYELLOW * rejected}({ass1} -> {ass2})  "

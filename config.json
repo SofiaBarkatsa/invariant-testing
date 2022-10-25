@@ -22,5 +22,7 @@
                       "invariants_folder": "",
                       "seed": 0,
                       "project": "seahorn",
-                      "mount_folder": "/pipe"
+                      "mount_folder": "/pipe",
+                      "different_domains": true,
+                      "assumption_domain": "soct"
 }
