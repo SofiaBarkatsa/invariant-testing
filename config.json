@@ -1,7 +1,10 @@
 {
                       "program_folder": "../c",
-                      "cores": 6,
+                      "cores": 3,
                       "percentage": 50,
+                      "assertion_percentage": 50,
+                      "random_assertions": true,
+                      "oracle_assertions": true,
                       "run_each_file_times": 8,
                       "tr_mode": "weaker",
                       "domain": "soct",
@@ -23,6 +26,6 @@
                       "seed": 0,
                       "project": "seahorn",
                       "mount_folder": "/pipe",
-                      "different_domains": true,
+                      "different_domains": false,
                       "assumption_domain": "soct"
 }

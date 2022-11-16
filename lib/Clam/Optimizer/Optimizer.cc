@@ -73,6 +73,17 @@ static llvm::cl::opt<int>
     Percentage("percentage",
              llvm::cl::desc("Percentage for Transformations"),
              llvm::cl::init(50));
+
+static llvm::cl::opt<int>
+    AssertionPercentage("assertion_percentage",
+             llvm::cl::desc("Percentage for Adding Assertions"),
+             llvm::cl::init(0));
+
+static llvm::cl::opt<bool>
+    OracleAssertions("oracle_assertions",
+             llvm::cl::desc("For adding all invariants as Assertions"),
+             llvm::cl::init(true));    
+        
 //-------------------------------------------------------------------------------------------------
 
 /* End LLVM pass options */
@@ -87,14 +98,15 @@ STATISTIC(NumInstrLoads, "Number of load inst instrumented with invariants");
 
 // GLOBAL VARS BY SOFIA------------------------------------------------------------------
 std::ofstream out;			//file to write module pass output
-int Seed = 0;
+int Seed = 0;           // if seed == -1 then no transformations
 std::string Mode = "stronger";
 std::string Subfolder;
+llvm::Function *m_assertFn;
 //---------------------------------------------------------------------------------------
 
 
 // FUNCTIONS BY SOFIA---------------------------------------------------------------------
-bool flip_a_coin(){
+bool flip_a_coin(int Percentage){
   int num = rand()%100;
 
   if (num < Percentage) return true;
@@ -346,7 +358,7 @@ private:
     }
 
     else if (inequality){
-      bool coin = flip_a_coin();
+      bool coin = flip_a_coin(Percentage);
       if (coin){
         out << "Constraint turned to inequality (<=) \n"; 
         return B.CreateICmpSLE(ee, cc, Name);
@@ -379,7 +391,7 @@ private:
   static bool mayOverflow (const number_t &n, crab::wrapint::bitwidth_t b) {
     auto max = crab::wrapint::get_signed_max(b).get_signed_bignum();
     auto min = crab::wrapint::get_signed_min(b).get_signed_bignum();
-    out<<"max = "<<int64_t(max)<<", min = "<<int64_t(min)<<"\n";
+    //out<<"max = "<<int64_t(max)<<", min = "<<int64_t(min)<<"\n";
     return (n < min || n > max);
   };
 
@@ -442,7 +454,7 @@ private:
 // CODE BY SOFIA ###################################################################
     log_info(B.GetInsertBlock(), cst);  //always log info
     
-    bool transform = flip_a_coin();
+    bool transform = flip_a_coin(Percentage);
     int dice = throw_dice(2);
     if (Seed == -1) {
       transform = false;
@@ -485,7 +497,6 @@ private:
           }
         }
       }
-
       else if (cst.is_equality()){
         //assume False
         out << "Assume FALSE \n"; 
@@ -500,25 +511,6 @@ private:
         return false_v; //do not print the assumption
       }
 
-      /*if (dice == 0){ 
-        out << "Assume FALSE \n"; 
-        Value *false_v = mkNum(number_t("0"), Type::getInt1Ty(ctx), ctx);
-        return false_v; //do not print the assumption
-      }
-      else {
-        if (cst.is_inequality()){ 
-          if(flip_a_coin()){ 
-            //make an inequality -> equality  (<=  -> =)            
-            return cstToValue(cst, B, ctx, Name, ty, true, false, false);
-          }
-          else { 
-            return cstToValue(cst, B, ctx, Name, ty, false, false, true);
-          }
-        }
-        //else no transformation
-        else
-          return cstToValue(cst, B, ctx, Name, ty, false, false, false);
-      }*/
     }   
     //========================================================================
     // WEAKER TRANSFORMATION
@@ -569,20 +561,6 @@ private:
         return nullptr; //do not print the assumption
       }
 
-      /* 
-      if (dice == 0){ 
-        out << "Constraint Dropped\n";
-        return nullptr; //do not print the assumption
-      }
-      else {
-        //make an equality -> inequality
-        if (cst.is_equality())
-          return cstToValue(cst, B, ctx, Name, ty, false, true, false);
-        //else no transformation
-        else
-          return cstToValue(cst, B, ctx, Name, ty, false, false, false);
-      }
-    */
     }
     //========================================================================
     // NO TRANSFORMATION
@@ -594,6 +572,133 @@ private:
     else return nullptr; //in case something went wrong
 //-------------------------------------------------------------------------------  
   }
+
+
+  // Sofia :
+  static Value *genRandomAssert(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
+		     DominatorTree *DT, const Twine &Name = "assert_") {
+
+    //get integer type (ty)
+    IntegerType *ty = nullptr;
+    for (auto v : cst.variables()) {
+      if (!ty) {
+        ty = getIntType(v.name());
+      } else {
+        if (ty != getIntType(v.name())) {
+          ty = nullptr;
+          break;
+        }
+      }
+    }
+    auto e = cst.expression() - cst.expression().constant();
+    for (auto t : e) {
+      //for each term in the expression
+      number_t n = t.first;
+      if (n == 0){ 
+        continue;
+      }
+      if (mayOverflow(n, ty->getBitWidth())) {
+        return nullptr;
+      }
+
+      varname_t v = t.second.name();
+      Value *vv = mkVar(v);
+      assert(vv);
+      assert(vv->getType()->isIntegerTy());
+
+      Value *cc = mkNum(throw_dice(100), ty, ctx);
+      return B.CreateICmpEQ(vv, cc, Name);
+    }
+    return nullptr;
+  }
+
+
+  static Value *genOracleAssert(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
+			DominatorTree *DT, const Twine &Name = "oracle_") {
+    
+    if (cst.is_tautology()) {
+      return nullptr; // mkBool(ctx, true);
+    }
+    if (cst.is_contradiction()) {
+      return mkBool(ctx, false);
+    }
+    // translate only expressions of LLVM integer type
+    IntegerType *ty = nullptr;
+    for (auto v : cst.variables()) {
+      if (!ty) {
+        ty = getIntType(v.name());
+      } else {
+        if (ty != getIntType(v.name())) {
+          ty = nullptr;
+          break;
+        }
+      }
+    }
+    if (!ty) {
+      return nullptr;
+    }
+    // more sanity checks before we insert the invariants
+    for (auto t : cst.expression()) {
+      varname_t v = t.second.name();
+      if (Value *vv = mkVar(v)) {
+        if (!vv->getType()->isIntegerTy()) {
+          return nullptr;
+        }
+        if (Instruction *Def = dyn_cast<Instruction>(vv)) {
+          BasicBlock *User = B.GetInsertBlock();
+          if (Def->getParent() == User && isa<PHINode>(Def)) {
+            continue;
+          } else if (DT && !(DT->dominates(Def, User))) {
+            return nullptr;
+          }
+        }
+      } else {
+        return nullptr;
+      }
+    }
+    auto e = cst.expression() - cst.expression().constant();
+    Value *ee = mkNum(number_t("0"), ty, ctx);
+    for (auto t : e) {
+      number_t n = t.first;
+      if (n == 0) {
+        continue;
+      }
+
+      // HACK: skip constraints with coefficients that do not fit into ty
+      if (mayOverflow(n, ty->getBitWidth())) {
+	      return nullptr;
+      }
+      varname_t v = t.second.name();
+      Value *vv = mkVar(v);
+      assert(vv);
+      assert(vv->getType()->isIntegerTy());
+      if (n == 1) {
+        ee = mkBinOp(ADD, B, ee, vv, Name);
+      } else if (n == -1) {
+        ee = mkBinOp(SUB, B, ee, vv, Name);
+      } else {
+        ee = mkBinOp(ADD, B, ee,
+		     mkBinOp(MUL, B, mkNum(n, ty, ctx), vv, Name), Name);
+      }
+      assert(ee);
+    }
+
+    number_t c = -cst.expression().constant();
+    // HACK: skip constraints whose rhs that do not fit into ty
+    if (mayOverflow(c, ty->getBitWidth())) {
+      return nullptr;
+    }
+    
+    Value *cc = mkNum(c, ty, ctx);
+    if (cst.is_inequality()) {
+      return B.CreateICmpSLE(ee, cc, Name);
+    } else if (cst.is_equality()) {
+      return B.CreateICmpEQ(ee, cc, Name);
+    } else {
+      return B.CreateICmpNE(ee, cc, Name);
+    }
+  }
+
 
   //###############################################################################
   //###############################################################################
@@ -612,6 +717,7 @@ public:
 	       Function *assumeFn, CallGraph *cg, DominatorTree *DT,
 	       const Function *insertFun, const Twine &Name = "") const{
     bool change = false;
+    //for each constraint
     for (auto cst : csts) {
       if (Value *cst_code = genCode(cst, B, ctx, DT, Name)) {
         CallInst *ci = B.CreateCall(assumeFn, cst_code);
@@ -620,11 +726,43 @@ public:
           (*cg)[insertFun]->
 	    addCalledFunction(ci, (*cg)[ci->getCalledFunction()]);
         }
+
+        //Sofia :
+        //Add random assertion with a probability
+        if (flip_a_coin(AssertionPercentage) && Seed == -1){
+          Value *assert_val = genRandomAssert(cst, B, ctx, DT, "assert_");
+          out<<"adding new assertion\n";
+
+          if (assert_val){ 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
+        
+            if (cg) {
+              (*cg)[insertFun]->
+                addCalledFunction(ci_assert, (*cg)[ci_assert->getCalledFunction()]);
+            }
+          }
+        }
+        //Add invariant as assertion if asked so
+        if (OracleAssertions && Seed == -1){
+          Value *assert_val = genOracleAssert(cst, B, ctx, DT, "oracle_");
+          out<<"adding oracle assertion\n";
+
+          if (assert_val){ 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
+        
+            if (cg) {
+              (*cg)[insertFun]->
+                addCalledFunction(ci_assert, (*cg)[ci_assert->getCalledFunction()]);
+            }
+          }
+        }
+
+
       }
     }
     return change;
   }
-  
+ 
 };
 
 // Generate bitcode for the value of v if it is a constant
@@ -815,6 +953,7 @@ static bool instrumentBlock(lin_cst_sys_t csts, llvm::BasicBlock *bb,
   NumInstrBlocks++;
   bool res = g.genCode(csts, Builder, ctx, assumeFn, cg, DT, bb->getParent(),
                         "crab_");
+
   return res;
 }
 
@@ -971,6 +1110,7 @@ bool Optimizer::runOnModule(Module &M) {
   out.open(log_file);
   out<<"-------------------------------------------------\n";
   out<<"SEED : "<< Seed <<"\n";
+  out<<"ASSERT PERCENTAGE : "<<AssertionPercentage<<"%\n";
   out<<"PERCENTAGE : "<< Percentage <<"%\n";
   out<<"TRANSFORMATION MODE : "<< Mode <<"\n";
    out<<"-------------------------------------------------\n\n";
@@ -993,6 +1133,31 @@ bool Optimizer::runOnModule(Module &M) {
     m_cg->getOrInsertFunction(m_assumeFn);
   }
   
+  // Sofia : get or Insert Assert function:  
+ /* 
+  AttrBuilder B2; 
+  AttributeList as2 = AttributeList::get(ctx, AttributeList::FunctionIndex, B2);
+  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("__CRAB_assert", as2,
+                                                        Type::getVoidTy(ctx),
+                                                        Type::getInt32Ty(ctx))
+                                      .getCallee());
+*/
+
+  AttrBuilder B2; 
+  //B2.addAttribute(Attribute::ReadNone);
+  AttributeList as2 = AttributeList::get(ctx, AttributeList::FunctionIndex, B2);
+  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("crab.assert", as2,
+                                                        Type::getVoidTy(ctx),
+                                                        Type::getInt32Ty(ctx))
+                                      .getCallee());
+
+
+
+  if (m_cg) {
+    m_cg->getOrInsertFunction(m_assertFn);
+  }
+
+
   bool change = false;
   
   for (auto &f : M) {

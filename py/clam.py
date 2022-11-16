@@ -509,6 +509,15 @@ def parseArgs(argv):
     
     p.add_argument('--c-widening-jump-set', help='Crabs widening-jump-set',
                     dest='c_widening_jump_set', type=int, default=0)
+
+    p.add_argument('--assertion-percentage', help='Use Optimizer to add assertions with the given percentage',
+                    dest='assertion_percentage', type=int, default=0)
+
+    p.add_argument('--oracle-assertions', help='Add all invariants as assertions using Optimizer',
+                    dest='oracle_assertions', default=False, action='store_true')
+
+    p.add_argument('--produce-one-file', help='While using Optimizer, produce only 1 file (initial.py)',
+                    dest='produce_one_file', default=False, action='store_true')
     
     ######################################################################
     # Hidden options
@@ -1031,6 +1040,8 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
     # SOFIA OPTIONS:
     #these parameters are always appended
     clam_args.append('--percentage={0}'.format(args.percentage))
+    clam_args.append('--assertion_percentage={0}'.format(args.assertion_percentage))
+
     clam_args.append('--inv_folder={0}'.format(args.inv_folder))
     clam_args.append('--num_of_files={0}'.format(args.num_of_files))
     clam_args.append('--domain={0}'.format(args.domain))
@@ -1040,6 +1051,12 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
     clam_args.append('--c_widening_delay={0}'.format(args.c_widening_delay))
     clam_args.append('--c_narrowing_iterations={0}'.format(args.c_narrowing_iterations))
     clam_args.append('--c_widening_jump_set={0}'.format(args.c_widening_jump_set))
+
+    if args.oracle_assertions:
+        clam_args.append('--oracle_assertions=true')
+
+    if args.produce_one_file:
+        clam_args.append('--produce_one_file=true')
 
 
     # begin hidden options

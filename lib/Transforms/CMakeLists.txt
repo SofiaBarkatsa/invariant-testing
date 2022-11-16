@@ -9,6 +9,7 @@ add_llvm_library(LlvmPasses ${CLAM_LIBS_TYPE} DISABLE_LLVM_LINK_LLVM_DYLIB
   DevirtFunctionsPass.cc
   ExternalizeFunctions.cc  
   ExternalizeAddressTakenFunctions.cc
+  PromoteAssert.cc 
   PromoteAssume.cc  
   PromoteMalloc.cc
   NondetInit.cc

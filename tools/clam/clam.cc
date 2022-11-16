@@ -184,6 +184,11 @@ static llvm::cl::opt<int>
              llvm::cl::desc("c_widening_jump_set"),
              llvm::cl::init(0));
 
+static llvm::cl::opt<bool>
+    ProduceOneFile("produce_one_file",
+             llvm::cl::desc("produce_one_file"),
+             llvm::cl::init(false));
+
 std::string InitialOutputFilename;
 //-------------------------------------------------------------------------------------------------
 
@@ -552,9 +557,10 @@ int main(int argc, char **argv) {
 // test Numair's idea##############################
   std::unique_ptr<llvm::ToolOutputFile> output3;
   std::string OutputFilename1;
+
     if (!OutputFilename.empty()){ 
       OutputFilename1 = InvFolder + "/initial.bc";
-      llvm::errs()<<OutputFilename1<<"\n";
+      llvm::errs()<<"Output in file: "<<OutputFilename1<<"\n";
     }
   
   if (!OutputFilename.empty()){ 
@@ -583,10 +589,15 @@ int main(int argc, char **argv) {
   }
 //end of Numair's idea ################################
   
-  
+  //in case we want to skip producing more than one files
+  if (ProduceOneFile == true){
+      return 0;
+  }
+
   //modifications by sofia if CrabOpt enabled
   for (int i=0; i<NumOfFiles; i++){ 
     //sofia------ create new params ------------------------------
+    llvm::errs()<<"In for loop : "<<i<<"\n";
     std::unique_ptr<llvm::ToolOutputFile> output2;
 
     std::srand((unsigned int)time(NULL));
@@ -625,7 +636,7 @@ int main(int argc, char **argv) {
     }
     //-----------------------------------------------------------------
     
-    
+    llvm::errs()<<"Starting pass manager "<<i<<"\n";
     //new Pass Manager--------------------------------------------
     llvm::legacy::PassManager pass_manager2;  
     
@@ -636,7 +647,10 @@ int main(int argc, char **argv) {
     if (!DisableCrab && CrabOpt) {
       // post-processing of the bitcode using Crab invariants
       pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), seed, mode, subfolder));
-
+      
+      //pass_manager.add(llvm::createVerifierPass());
+      //pass_manager2.add(clam::createPromoteAssertPass());
+      
       //// Cleanup
       // -- simplify invariants added in the bitecode.  Sofia:
       // replaced by delete crab command pass

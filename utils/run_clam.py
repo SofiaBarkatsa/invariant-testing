@@ -34,12 +34,15 @@ def produce_transformed_files(config, inv_folder):
     analysis =  get_value_json(config, "analysis") 
     directory =  get_value_json(config, "directory")
     percentage =  get_value_json(config, "percentage")
-    domain =  get_value_json(config, "assumption_domain")
+    domain = get_value_json(config, "assumption_domain")
     reft =  get_value_json(config, "run_each_file_times")
-    widening_delay =  get_value_json(config, "widening_delay")
+    widening_delay = get_value_json(config, "widening_delay")
     enable_warnings =  get_value_json(config, "enable-warnings")
     widening_jump_set =  get_value_json(config, "widening_jump_set")
     narrowing_iterations =  get_value_json(config, "narrowing_iterations")
+    assertion_percentage =  get_value_json(config, "assertion_percentage")
+    random_assertions =  int(get_value_json(config, "random_assertions"))* assertion_percentage
+    oracle_assertions =  int(get_value_json(config, "oracle_assertions"))* "--oracle-assertions"
 
     inline = int( get_value_json(config, "inline")) * "--inline"
 
@@ -52,19 +55,12 @@ def produce_transformed_files(config, inv_folder):
 
     os.system(f"clang -S -emit-llvm -o {inv_folder}/{file_name}.ll {directory}{file_name}.c ")    
 
-    """proc = os.system(f"clam.py --domain={domain}  --crab-disable-warnings --crab-promote-assume\
-        --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry \
-            --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft}\
-            --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set} \
-                --c-track={ctrack}  {inline}  --c-analysis={analysis}  \
-                    -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem}\
-                    {directory}{file_name}.c {enable_warnings} > /dev/null ")  # 2>/dev/null """
-
     proc = os.system(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume\
         --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry \
             --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft}\
             --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set} \
                 --c-track={ctrack}  {inline}  --c-analysis={analysis}  \
+                    --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings\
                     -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem}\
                     {inv_folder}/{file_name}.ll {enable_warnings} > /dev/null ")  # 2>/dev/null 
 
@@ -114,7 +110,7 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
 
     ocrab = f"-ocrab={path_to_file2}.crabir" #* (analysis=="inter")
 
-    stream = os.popen(f"clam.py  --no-preprocess --crab-check=assert --crab-dom={domain} {inline} \
+    stream = os.popen(f"clam.py  --crab-disable-warnings --no-preprocess --crab-check=assert --crab-dom={domain} {inline} \
         --crab-disable-warnings --crab-track={ctrack} --crab-lower-unsigned-icmp=true {an_crab} \
         --crab-widening-delay={widening_delay} --crab-narrowing-iterations={narrowing_iterations} --crab-widening-jump-set={widening_jump_set} \
             --cpu={alarm} --mem={mem} {path_to_file} {ocrab} {enable_warnings}")  # 2>/dev/null
