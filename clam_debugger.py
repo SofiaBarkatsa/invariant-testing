@@ -16,6 +16,7 @@ TTIRQUOISE = '\033[36m'
 TDEFAULT = '\033[0m'
 
 def rename_bugs(args):
+    # okey
     bug_folders = process_files.find_folders(args.d)
     mx = 0
     for fol in bug_folders:
@@ -34,6 +35,7 @@ def rename_bugs(args):
 
 
 def test_file(args):
+    # okey
     os.system("rm -r invariants")
     os.system("mkdir invariants")
     os.system("mkdir invariants/core_0")
@@ -52,6 +54,7 @@ def test_file(args):
 
 
 def narrow_down_bugs(args):
+    # works but could be improved
     bug_folders = process_files.find_folders(args.d)
     bug_files = []
 
@@ -75,10 +78,6 @@ def narrow_down_bugs(args):
         ll_files = process_files.get_ll_files(path)
         if "minimized.ll" in ll_files:
             ll_files.remove("minimized.ll")
-        if min(ll_files)[:-3] not in max(ll_files):
-            print(f"{min(ll_files)} does not match {max(ll_files)}")
-            os.system(f"rm -rf {path}")
-            continue
 
         if tpl not in bug_files:
             print(f"new file bug in : {path} \t  {tpl}")
@@ -93,6 +92,7 @@ def narrow_down_bugs(args):
 
 
 def debug(args):
+    #probably ok
     #args = bug_folder
     config = args + "/config.json"
     
@@ -108,7 +108,7 @@ def debug(args):
         ll_files.remove("minimized.ll")
     #Call clam to find warnings ----------------------------------------------------------
     #warnings on initial.bc
-    path_to_file = f"{args}/{min(ll_files)}"
+    path_to_file = f"{args}/initial.bc"
     warnings, ass1 = run_clam.run_and_find_warnings(config, args, path_to_file)
 
     #-------------------------------------------------------------------------------------------

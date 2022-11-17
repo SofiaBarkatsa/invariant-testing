@@ -43,9 +43,11 @@ def add_files(file, directory, inv_folder, subfolder):
     os.system(f"cp {directory}/{file}.c bugs/{working_folder}/{file}.c")
     #copy config file
     os.system(f"cp {inv_folder}/config.json bugs/{working_folder}/config.json") 
+    
     #copy initial .bc file
-    os.system(f"cp {inv_folder}/{file}.bc bugs/{working_folder}/{file}.bc")
-    os.system(f"llvm-dis bugs/{working_folder}/{file}.bc")
+    os.system(f"cp {inv_folder}/{file}.bc bugs/{working_folder}/initial.bc")
+    os.system(f"llvm-dis bugs/{working_folder}/initial.bc")
+    
     #copy transformed .bc file
     tr = process_files.get_bc_files(subfolder)
     if tr != []:
