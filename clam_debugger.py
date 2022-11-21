@@ -15,6 +15,30 @@ TPURPLE = '\033[35m'
 TTIRQUOISE = '\033[36m'
 TDEFAULT = '\033[0m'
 
+
+def get_size(string):
+    " returns the first number found in a string like"
+    "224K ../c/whnoc/cwnjcne.c"
+    s = string.split()[0]
+    num = ""
+    unit = 0.0
+    for char in s:
+        if char.isdigit() or char == ".":
+            num = num + char
+        elif char == "B":
+            unit = 1.0
+        elif char == "K":
+            unit = 1000.0
+        elif char == "M":
+            unit = 1000000.0
+        else:
+            print("could not calculate size")
+            return 0
+
+    num = int(float(num) * unit)
+    return num
+
+
 def rename_bugs(args):
     # okey
     bug_folders = process_files.find_folders(args.d)
@@ -239,6 +263,36 @@ def update_json_files(args):
             process_files.update_json(config, "mem", 500)
 
 
+def find_smallest_file(args, ignore_folders):
+    bug_folders = process_files.find_folders(args.d)
+    smallest_file = ""
+    min_size = 1000000000000
+    
+    for fol in bug_folders:
+        if fol not in ignore_folders:
+            size_info = os.popen(f"du -sh {args.d}/{fol}/initial.ll")
+            output = size_info.readlines()[0]
+            size = get_size(output)
+
+            if size < min_size :
+                smallest_file = fol
+                min_size = size
+            
+    return [smallest_file, min_size]
+
+
+def find_smallest_files(args):
+    num_of_files = 2
+    folders = []
+    for i in range(num_of_files):
+        ans = find_smallest_file(args, folders)
+        folders.append(ans[0])
+        config = args.d + "/" + ans[0] + "/config.json"
+        print_str = f"In {ans[0]} file of size {ans[1]} \t (" 
+        print_str += process_files.get_value_json(config, "analysis") + ", domain:"
+        print_str += process_files.get_value_json(config, "domain") + ")"
+        print(print_str)
+
 
 
 if __name__ == "__main__":
@@ -281,6 +335,9 @@ if __name__ == "__main__":
     p.add_argument("--update-json-files", action = 'store_true', default = False , \
         help="Updates all json files, so that they have all the newest parameters")
 
+    p.add_argument("--find-smallest-files", action = 'store_true', default = False , \
+        help="Updates all json files, so that they have all the newest parameters")
+
     args = p.parse_args()
 
     if (args.config):
@@ -307,5 +364,10 @@ if __name__ == "__main__":
 
         if (args.test_all):
             test_all(args)
+
+        if (args.find_smallest_files):
+            find_smallest_files(args)
+
+        
 
     #print(run_clam.run_and_find_warnings("invariants/core_0/config.json", " ", "invariants/core_0/stronger_0/barrier_2t_stronger_0.ll"))
