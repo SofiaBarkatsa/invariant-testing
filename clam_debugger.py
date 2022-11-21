@@ -66,14 +66,14 @@ def narrow_down_bugs(args):
         bug_file = bug_file + process_files.get_value_json(config, "file")
 
         analysis = process_files.get_value_json(config, "analysis")
-        ctrack = process_files.get_value_json(config, "ctrack")
+        domain = process_files.get_value_json(config, "domain")
         #domain = process_files.get_value_json(config, "domain")
         
         #widening_delay = process_files.get_value_json(config, "widening_delay")
         #widening_jump_set = process_files.get_value_json(config, "widening_jump_set")
         #narrowing_iterations = process_files.get_value_json(config, "narrowing_iterations")
 
-        tpl = (bug_file, analysis, ctrack)
+        tpl = (bug_file, analysis, domain)
 
         ll_files = process_files.get_ll_files(path)
         if "minimized.ll" in ll_files:
@@ -108,14 +108,20 @@ def debug(args):
         ll_files.remove("minimized.ll")
     #Call clam to find warnings ----------------------------------------------------------
     #warnings on initial.bc
+    path_to_file=""
+
+    if "initial.ll" in ll_files:
+        path_to_file = f"{args}/initial.ll"
+        ll_files.remove("initial.ll")
+    else:
+        path_to_file = f"{args}/initial.bc"
     path_to_file = f"{args}/initial.bc"
     warnings, ass1 = run_clam.run_and_find_warnings(config, args, path_to_file)
 
     #-------------------------------------------------------------------------------------------
     #warnings on transformed.bc
-    path_to_file2 = f"{args}/{max(bc_files)}"
+    path_to_file2 = f"{args}/{ll_files[0]}"
     warnings2, ass2 = run_clam.run_and_find_warnings(config, args, path_to_file2)
-
     #-------------------------minimizer------------------------------------------------------
     warnings3 = -1
     ass3 = -1

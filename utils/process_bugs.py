@@ -34,18 +34,21 @@ def add_files(file, directory, inv_folder, subfolder):
     create_new_bug_folder()
 
     if process_files.find_file("log.txt", subfolder):
-        os.system(f"cp {subfolder}/log.txt bugs/{working_folder}/log.txt")
+        os.system(f"cp {subfolder}/log.txt bugs/{working_folder}/transformed_log.txt")
 
     if process_files.find_file("assertionsLOG.txt", subfolder):
         os.system(f"cp {subfolder}/assertionsLOG.txt bugs/{working_folder}/assertionsLOG.txt")
     
+    if process_files.find_file("log.txt", inv_folder):
+        os.system(f"cp {inv_folder}/log.txt bugs/{working_folder}/initial_log.txt")
+
     #copy c file
     os.system(f"cp {directory}/{file}.c bugs/{working_folder}/{file}.c")
     #copy config file
     os.system(f"cp {inv_folder}/config.json bugs/{working_folder}/config.json") 
     
     #copy initial .bc file
-    os.system(f"cp {inv_folder}/{file}.bc bugs/{working_folder}/initial.bc")
+    os.system(f"cp {inv_folder}/initial.bc bugs/{working_folder}/initial.bc")
     os.system(f"llvm-dis bugs/{working_folder}/initial.bc")
     
     #copy transformed .bc file

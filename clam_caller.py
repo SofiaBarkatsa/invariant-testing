@@ -216,6 +216,7 @@ def run(core, inv_folder):
         print_str = print_str + (failed and not rejected and result == 1) * f"{TRED} (assertion Failure)" + \
                     (failed and not rejected and result >= 3) * f"{TRED} (assertion Failure & missmatch)" + \
                     TDEFAULT
+        print_str = print_str + f"({ass1}->{ass2})"
         print(print_str)
         
         if store: # and not rejected:
