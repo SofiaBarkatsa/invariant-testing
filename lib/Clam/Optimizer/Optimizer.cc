@@ -82,7 +82,7 @@ static llvm::cl::opt<int>
 static llvm::cl::opt<bool>
     OracleAssertions("oracle_assertions",
              llvm::cl::desc("For adding all invariants as Assertions"),
-             llvm::cl::init(true));    
+             llvm::cl::init(false));    
         
 //-------------------------------------------------------------------------------------------------
 
@@ -743,7 +743,7 @@ public:
             }
           }
         }
-        //Add invariant as assertion if asked so
+        //Add invariant as assertion if asked so 
         if (OracleAssertions && AddAssertions == 1){
           Value *assert_val = genOracleAssert(cst, B, ctx, DT, "oracle_");
           out<<"adding oracle assertion\n";
