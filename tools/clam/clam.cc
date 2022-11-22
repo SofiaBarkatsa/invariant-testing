@@ -554,6 +554,44 @@ int main(int argc, char **argv) {
   }
   crab::outs() <<"\n\n";*/
 
+
+// adding random & oracle assertions ###################################
+  std::unique_ptr<llvm::ToolOutputFile> output0;
+  std::string OutputFilename0;
+
+  if (!OutputFilename.empty()){ 
+      OutputFilename0 = InvFolder + "/sofia.bc";
+      llvm::errs()<<"Output in file: "<<OutputFilename0<<"\n";
+    }
+  
+  if (!OutputFilename.empty()){ 
+    output0 = std::make_unique<llvm::ToolOutputFile>(
+      OutputFilename0.c_str(), error_code, llvm::sys::fs::F_None);
+  }
+
+  llvm::legacy::PassManager pass_manager0;  
+  
+  pass_manager0.add(clam::createDeleteAssumePass());
+  pass_manager0.add(clam::createDeleteCrabCommandPass());
+  
+  //add assertions & assumptions
+  if (!DisableCrab && CrabOpt) {
+    // post-processing of the bitcode using Crab invariants
+    pass_manager0.add(clam::createOptimizerPass(&(*clam_analysis), -1, 1,"weaker", InvFolder));
+  }
+
+  //delete all the assumptions
+  pass_manager0.add(clam::createDeleteAssumePass());
+  pass_manager0.add(clam::createDeleteCrabCommandPass());
+
+
+
+  pass_manager0.run(*module.get()); 
+
+
+// end of adding assertions ###################################
+
+
 // test Numair's idea##############################
   std::unique_ptr<llvm::ToolOutputFile> output3;
   std::string OutputFilename1;
@@ -573,9 +611,10 @@ int main(int argc, char **argv) {
   pass_manager2.add(clam::createDeleteAssumePass());
   pass_manager2.add(clam::createDeleteCrabCommandPass());
   
+  //add assertions & assumptions
   if (!DisableCrab && CrabOpt) {
     // post-processing of the bitcode using Crab invariants
-    pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), -1, "weaker", InvFolder));
+    pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), -1, 0,"weaker", InvFolder));
   }
 
   if (!OutputFilename.empty()) {
@@ -646,7 +685,7 @@ int main(int argc, char **argv) {
 
     if (!DisableCrab && CrabOpt) {
       // post-processing of the bitcode using Crab invariants
-      pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), seed, mode, subfolder));
+      pass_manager2.add(clam::createOptimizerPass(&(*clam_analysis), seed, 0, mode, subfolder));
       
       //pass_manager.add(llvm::createVerifierPass());
       //pass_manager2.add(clam::createPromoteAssertPass());

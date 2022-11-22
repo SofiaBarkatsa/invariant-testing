@@ -139,7 +139,8 @@ def debug(args):
         ll_files.remove("initial.ll")
     else:
         path_to_file = f"{args}/initial.bc"
-    path_to_file = f"{args}/initial.bc"
+    
+    #path_to_file = f"{args}/initial.bc"
     warnings, ass1 = run_clam.run_and_find_warnings(config, args, path_to_file)
 
     #-------------------------------------------------------------------------------------------

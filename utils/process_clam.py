@@ -57,6 +57,7 @@ def find_warnings(output):
             unchecked = get_number(output[row])
 
     num_of_assertions = inter * (checked + unchecked) + (not inter) * (warnings + errors + safe)
+    #print(failed)
     return failed, num_of_assertions
 
 

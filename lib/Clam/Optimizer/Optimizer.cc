@@ -99,6 +99,7 @@ STATISTIC(NumInstrLoads, "Number of load inst instrumented with invariants");
 // GLOBAL VARS BY SOFIA------------------------------------------------------------------
 std::ofstream out;			//file to write module pass output
 int Seed = 0;           // if seed == -1 then no transformations
+int AddAssertions = 0;  //if AddAssertions = 1, only then add oracle/random assertions
 std::string Mode = "stronger";
 std::string Subfolder;
 llvm::Function *m_assertFn;
@@ -729,7 +730,7 @@ public:
 
         //Sofia :
         //Add random assertion with a probability
-        if (flip_a_coin(AssertionPercentage) && Seed == -1){
+        if (flip_a_coin(AssertionPercentage) && AddAssertions == 1){
           Value *assert_val = genRandomAssert(cst, B, ctx, DT, "assert_");
           out<<"adding new assertion\n";
 
@@ -743,7 +744,7 @@ public:
           }
         }
         //Add invariant as assertion if asked so
-        if (OracleAssertions && Seed == -1){
+        if (OracleAssertions && AddAssertions == 1){
           Value *assert_val = genOracleAssert(cst, B, ctx, DT, "oracle_");
           out<<"adding oracle assertion\n";
 
@@ -1352,11 +1353,12 @@ char clam::OptimizerPass::ID = 0;
 
 
 // modified by Jorge---------------------------------------------------
-llvm::Pass *createOptimizerPass(ClamGlobalAnalysis *clam = nullptr, int seed=0, std::string mode="stronger", std::string subfolder="") {
+llvm::Pass *createOptimizerPass(ClamGlobalAnalysis *clam = nullptr, int seed=0, int add_assertions=0, std::string mode="stronger", std::string subfolder="") {
   std::srand(seed);   //probably working, added by sofia
-  Seed = seed;              // sofia
-  Mode = mode;              // sofia
-  Subfolder = subfolder;    // sofia
+  Seed = seed;                        // sofia
+  Mode = mode;                        // sofia
+  AddAssertions = add_assertions;     // sofia
+  Subfolder = subfolder;              // sofia
   return new OptimizerPass(clam);
 }
  

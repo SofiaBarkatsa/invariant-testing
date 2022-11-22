@@ -116,6 +116,7 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
             --cpu={alarm} --mem={mem} {path_to_file} {ocrab} {enable_warnings}")  # 2>/dev/null
     
     output = stream.readlines()
+    #print(output)
     if look_for_analysis_results(output) == False:
         return -2, 0
     

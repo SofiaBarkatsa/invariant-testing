@@ -42,7 +42,7 @@ llvm::Pass *createAnnotatedCFGPrinterPass();
 llvm::Pass *createNullCheckPass();
 llvm::Pass *createUseAfterFreeCheckPass();
 // Postprocessing passes
-llvm::Pass *createOptimizerPass(ClamGlobalAnalysis*, int, std::string, std::string);  //sofia changed this
+llvm::Pass *createOptimizerPass(ClamGlobalAnalysis*, int, int, std::string, std::string);  //sofia changed this
 llvm::Pass *createDeleteAssumePass();   //sofia added this
 llvm::Pass *createDeleteCrabCommandPass();   //sofia added this
 } // namespace clam
