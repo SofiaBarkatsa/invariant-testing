@@ -346,7 +346,7 @@ private:
         }
       }
       
-      //cc = mkNum(number_t(new_constant), ty, ctx);
+      cc = mkNum(number_t(new_constant), ty, ctx);
       out<< "making constraint "<< Mode <<": from <="<< int64_t(c)<<" to <="<<new_constant<<"\n";
     }
 
