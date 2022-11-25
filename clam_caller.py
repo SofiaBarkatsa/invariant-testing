@@ -199,6 +199,7 @@ def run(core, inv_folder):
         failed = (transformation_mode == "stronger" and warnings < warnings2) or \
             (transformation_mode == "weaker" and not (warnings == warnings2) and (ass_domain==domain)) or \
             (transformation_mode == "weaker" and  (warnings > warnings2) and (ass_domain!=domain)) 
+            
             #or \
             #result == 1 or result >= 3
         
