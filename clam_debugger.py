@@ -121,11 +121,14 @@ def debug(args):
     config = args + "/config.json"
     
     domain = process_files.get_value_json(config, "domain")
+    ass_domain = process_files.get_value_json(config, "assumption_domain")
     file_name = process_files.get_value_json(config, "file")
     directory = process_files.get_value_json(config, "directory")
     analysis = process_files.get_value_json(config, "analysis")
     ctrack = process_files.get_value_json(config, "ctrack")
-
+    
+    #os.system(f"llvm-dis {args}/initial.bc")
+    
     bc_files = process_files.get_bc_files(args)
     ll_files = process_files.get_ll_files(args)
     if "minimized.ll" in process_files.get_ll_files(args):
@@ -133,6 +136,7 @@ def debug(args):
     #Call clam to find warnings ----------------------------------------------------------
     #warnings on initial.bc
     path_to_file=""
+
 
     if "initial.ll" in ll_files:
         path_to_file = f"{args}/initial.ll"
@@ -146,6 +150,7 @@ def debug(args):
     #-------------------------------------------------------------------------------------------
     #warnings on transformed.bc
     path_to_file2 = f"{args}/{ll_files[0]}"
+    print(path_to_file2)
     warnings2, ass2 = run_clam.run_and_find_warnings(config, args, path_to_file2)
     #-------------------------minimizer------------------------------------------------------
     warnings3 = -1
@@ -169,7 +174,9 @@ def debug(args):
         extra_warnings = f" min:{warnings3} "
 
     failed = (transformation_mode == "stronger" and warnings < warnings2) or \
-            (transformation_mode == "weaker" and not (warnings == warnings2)) 
+            (transformation_mode == "weaker" and not (warnings == warnings2) and (ass_domain==domain)) or \
+            (transformation_mode == "weaker" and  (warnings > warnings2) and (ass_domain!=domain))
+    print(failed)
     store = failed
     rejected = ass1 != ass2
 
