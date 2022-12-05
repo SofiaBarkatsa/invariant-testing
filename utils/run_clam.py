@@ -46,6 +46,7 @@ def produce_transformed_files(config, inv_folder):
 
     inline = int( get_value_json(config, "inline")) * "--inline"
 
+
     if directory != "":
         if directory[-1] != "/" :
             directory = directory + "/"   
@@ -63,6 +64,7 @@ def produce_transformed_files(config, inv_folder):
                     --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings\
                     -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem}\
                     {inv_folder}/{file_name}.ll {enable_warnings} > /dev/null ")  # 2>/dev/null 
+
 
     return proc == 0 
 
@@ -125,8 +127,10 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
         output = stream.readlines()
     
     """for i in output:
-        print(i)
-    """   
+        print(i)"""
+
+    #print(f"""clam.py  --crab-disable-warnings --no-preprocess --crab-check=assert --crab-dom={domain} {inline}  --crab-disable-warnings --crab-track={ctrack} --crab-lower-unsigned-icmp=true {an_crab} --crab-widening-delay={widening_delay} --crab-narrowing-iterations={narrowing_iterations} --crab-widening-jump-set={widening_jump_set} --cpu={alarm} --mem={mem} {path_to_file} {ocrab} {enable_warnings}""")
+    
     warnings, num_of_assertions = find_warnings(output)
     #print("file",path_to_file,"warn/assert", warnings, num_of_assertions)
     return warnings, num_of_assertions

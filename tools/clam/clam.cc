@@ -235,6 +235,7 @@ std::unique_ptr<CrabBuilderManager> mkCrabBuilderManager(llvm::Module &module,
   //==============================================================//  
 
   // Translate all memory operations using seadsa
+  llvm::errs()<<CTrack<<" in clam\n";
   if (CTrack == "mem")
     cparams.setPrecision(clam::CrabBuilderPrecision::MEM);
   else if (CTrack == "num")
@@ -290,7 +291,7 @@ std::unique_ptr<ClamGlobalAnalysis> mkClamGlobalAnalysis(llvm::Module &M, CrabBu
   aparams.narrowing_iters = CNarrowingIterations;
   aparams.widening_jumpset = CWideningJumpSet;
 
-  llvm::errs()<<"CWideningDelay="<<CWideningDelay<<", CNarrowingIterations="<<CNarrowingIterations<<", CWideningJumpSet="<<CWideningJumpSet<<"\n";
+  //llvm::errs()<<"CWideningDelay="<<CWideningDelay<<", CNarrowingIterations="<<CNarrowingIterations<<", CWideningJumpSet="<<CWideningJumpSet<<"\n";
 
   if (CAnalysis == "inter"){ 
     /// Create an inter-analysis instance 
@@ -480,7 +481,7 @@ int main(int argc, char **argv) {
     /// -- run the crab analyzer
     //clam = new clam::ClamPass();
     
-    // run Claam Analysis only if Optimizer is not calles
+    // run Clam Analysis only if Optimizer is not calles
     if (!CrabOpt){ 
       pass_manager.add(new clam::ClamPass()); // pass_manager owns clam!  
       if (DotLLVMCFG)
@@ -515,8 +516,10 @@ int main(int argc, char **argv) {
   if (!OutputFilename.empty())
     output->keep();
   
-  if (!CrabOpt)
-    return 0;
+  llvm::errs() <<" up here\n\n";
+  
+  /*if (!CrabOpt)
+    return 0;*/
 
   // if CrabOpt NOT enabled, then return here-------------------- Sofia --------
 
@@ -538,11 +541,12 @@ int main(int argc, char **argv) {
   llvm::Triple triple(tripleT);
   llvm::TargetLibraryInfoWrapperPass  TLIW(triple);  
   std::unique_ptr<CrabBuilderManager> clam_man = mkCrabBuilderManager(*module.get(), TLIW);
+  llvm::errs()<<"4\n";
   std::unique_ptr<ClamGlobalAnalysis> clam_analysis = mkClamGlobalAnalysis(*module.get(), *clam_man);
 
 
   /// Jorge: this is just to show that we can get the invariants from clam_analysis
-  /*crab::outs() << "===Invariants at the entry of each block===\n";
+  llvm::errs() << "===Invariants at the entry of each block===\n";
   for (auto &f: *module.get()) {
     for (auto &b: f) {
       llvm::Optional<clam_abstract_domain> dom = clam_analysis->getPre(&b, false);
@@ -552,8 +556,10 @@ int main(int argc, char **argv) {
       }
     }
   }
-  crab::outs() <<"\n\n";*/
+  llvm::errs() <<"\n\n";
 
+if (!CrabOpt)
+    return 0;
 
 // adding random & oracle assertions ###################################
   std::unique_ptr<llvm::ToolOutputFile> output0;

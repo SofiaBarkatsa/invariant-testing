@@ -522,9 +522,12 @@ private:
         switch (dice){
           case 0:
           {
-            //drop constraint
-            out << "Constraint Dropped\n";
-            return nullptr; //do not print the assumption
+            //drop constraint // assume(true)
+            out << "Assume TRUE \n"; 
+            Value *true_v = mkNum(number_t("1"), Type::getInt1Ty(ctx), ctx);
+            return true_v; //do not print the assumption
+            //out << "Constraint Dropped\n";
+            //return nullptr; //do not print the assumption
           }
           case 1:
           {
@@ -542,9 +545,12 @@ private:
         switch (dice){
           case 0:
           {
-            //drop constraint
-            out << "Constraint Dropped\n";
-            return nullptr; //do not print the assumption
+            //drop constraint / assume true
+            out << "Assume TRUE \n"; 
+            Value *true_v = mkNum(number_t("1"), Type::getInt1Ty(ctx), ctx);
+            return true_v; //do not print the assumption
+            //out << "Constraint Dropped\n";
+            //return nullptr; //do not print the assumption
           }
           case 1:
           { 
@@ -557,9 +563,12 @@ private:
         }
       }
       else {  //non equality
-        //drop constraint
-        out << "Constraint Dropped\n";
-        return nullptr; //do not print the assumption
+        //drop constraint / assume true
+        out << "Assume TRUE \n"; 
+        Value *true_v = mkNum(number_t("1"), Type::getInt1Ty(ctx), ctx);
+        return true_v; //do not print the assumption
+        //out << "Constraint Dropped\n";
+        //return nullptr; //do not print the assumption
       }
 
     }
@@ -735,7 +744,7 @@ public:
           out<<"adding new assertion\n";
 
           if (assert_val){ 
-            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt1Ty(ctx))); 
         
             if (cg) {
               (*cg)[insertFun]->
@@ -749,7 +758,7 @@ public:
           out<<"adding oracle assertion\n";
 
           if (assert_val){ 
-            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt1Ty(ctx))); 
         
             if (cg) {
               (*cg)[insertFun]->
@@ -1143,13 +1152,14 @@ bool Optimizer::runOnModule(Module &M) {
                                                         Type::getInt32Ty(ctx))
                                       .getCallee());
 */
+  // assertions crab understands: verifier.assert, crab.assert, __VERIFIER_assert, __CRAB_assert
 
   AttrBuilder B2; 
   //B2.addAttribute(Attribute::ReadNone);
   AttributeList as2 = AttributeList::get(ctx, AttributeList::FunctionIndex, B2);
-  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("crab.assert", as2,
+  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("verifier.assert", as2,
                                                         Type::getVoidTy(ctx),
-                                                        Type::getInt32Ty(ctx))
+                                                        Type::getInt1Ty(ctx))
                                       .getCallee());
 
 

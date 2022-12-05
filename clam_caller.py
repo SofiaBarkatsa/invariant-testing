@@ -197,8 +197,7 @@ def run(core, inv_folder):
         transformation_mode = folder.split("_")[0]
 
         failed = (transformation_mode == "stronger" and warnings < warnings2) or \
-            (transformation_mode == "weaker" and not (warnings == warnings2) and (ass_domain==domain)) or \
-            (transformation_mode == "weaker" and  (warnings > warnings2) and (ass_domain!=domain)) 
+            (transformation_mode == "weaker" and (warnings > warnings2))
             
             #or \
             #result == 1 or result >= 3

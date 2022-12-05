@@ -174,9 +174,7 @@ def debug(args):
         extra_warnings = f" min:{warnings3} "
 
     failed = (transformation_mode == "stronger" and warnings < warnings2) or \
-            (transformation_mode == "weaker" and not (warnings == warnings2) and (ass_domain==domain)) or \
-            (transformation_mode == "weaker" and  (warnings > warnings2) and (ass_domain!=domain))
-    print(failed)
+            (transformation_mode == "weaker" and (warnings > warnings2))
     store = failed
     rejected = ass1 != ass2
 
