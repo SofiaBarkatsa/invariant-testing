@@ -134,3 +134,43 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
     warnings, num_of_assertions = find_warnings(output)
     #print("file",path_to_file,"warn/assert", warnings, num_of_assertions)
     return warnings, num_of_assertions
+
+
+def print_run_command(config, inv_folder, path_to_file):
+    mem =  get_value_json(config, "mem")
+    seed =  get_value_json(config, "seed")
+    sleep =  get_value_json(config, "sleep")
+    alarm =  get_value_json(config, "alarm")
+    ctrack =  get_value_json(config, "ctrack")
+    domain =  get_value_json(config, "domain")
+    file_name =  get_value_json(config, "file")
+    analysis =  get_value_json(config, "analysis") 
+    directory =  get_value_json(config, "directory")
+    percentage =  get_value_json(config, "percentage")
+    reft =  get_value_json(config, "run_each_file_times")
+    widening_delay =  get_value_json(config, "widening_delay")
+    enable_warnings =  get_value_json(config, "enable-warnings")
+    widening_jump_set =  get_value_json(config, "widening_jump_set")
+    narrowing_iterations =  get_value_json(config, "narrowing_iterations")
+
+    inline = int(get_value_json(config, "inline")) * "--inline"
+    
+    analysis = get_value_json(config, "analysis")
+    an_crab = ""
+    if analysis == "inter":
+        an_crab = "--crab-inter"
+    elif an_crab == "backward":
+        an_crab = "--crab-backward"
+
+    if directory != "":
+        if directory[-1] != "/" :
+            directory = directory + "/"   
+
+    if path_to_file[-2:] == ".c":
+        path_to_file2 = path_to_file[:-2]
+    elif path_to_file[-3:] == ".bc":
+        path_to_file2 = path_to_file[:-3]
+    elif path_to_file[-3:] == ".ll":
+        path_to_file2 = path_to_file[:-3]
+
+    print(f"""clam.py  --crab-disable-warnings --no-preprocess --crab-check=assert --crab-dom={domain} {inline}  --crab-disable-warnings --crab-track={ctrack} --crab-lower-unsigned-icmp=true {an_crab} --crab-widening-delay={widening_delay} --crab-narrowing-iterations={narrowing_iterations} --crab-widening-jump-set={widening_jump_set} --cpu={alarm} --mem={mem} {path_to_file}""")

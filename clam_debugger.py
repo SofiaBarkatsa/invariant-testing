@@ -137,7 +137,6 @@ def debug(args):
     #warnings on initial.bc
     path_to_file=""
 
-
     if "initial.ll" in ll_files:
         path_to_file = f"{args}/initial.ll"
         ll_files.remove("initial.ll")
@@ -300,6 +299,23 @@ def find_smallest_files(args):
         print(print_str)
 
 
+def run_command(args):
+    config = args.d + "/config.json"
+
+    bc_files = process_files.get_bc_files(args.d)
+    ll_files = process_files.get_ll_files(args.d)
+    if "minimized.ll" in process_files.get_ll_files(args.d):
+        ll_files.remove("minimized.ll")
+
+    path_to_file=""
+    if "initial.ll" in ll_files:
+        path_to_file = f"{args.d}/initial.ll"
+        ll_files.remove("initial.ll")
+    else:
+        path_to_file = f"{args.d}/initial.bc"
+
+    run_clam.print_run_command(config, args.d, path_to_file)
+
 
 if __name__ == "__main__":
     path = "/clam/build"
@@ -344,6 +360,10 @@ if __name__ == "__main__":
     p.add_argument("--find-smallest-files", action = 'store_true', default = False , \
         help="Updates all json files, so that they have all the newest parameters")
 
+    p.add_argument("--run-command", action = 'store_true', default = False , \
+        help="Prints the run command so as to run clam using the terminal")
+
+
     args = p.parse_args()
 
     if (args.config):
@@ -374,6 +394,7 @@ if __name__ == "__main__":
         if (args.find_smallest_files):
             find_smallest_files(args)
 
-        
+        if (args.run_command):
+            run_command(args)
 
     #print(run_clam.run_and_find_warnings("invariants/core_0/config.json", " ", "invariants/core_0/stronger_0/barrier_2t_stronger_0.ll"))
