@@ -39,16 +39,29 @@ def get_processes():
     #print(f"{TRED}{p}{TDEFAULT}")
 
 
-def create_new_mount_folder(core):
+#TODO : folder with the min available name
+def create_new_mount_folder(core, inv_folder):
+    config = inv_folder + "/config.json"
     path_to_mount = process_files.get_value_json(config, "mount_folder") + f"/core_{core}"
     fol = process_files.find_folders(path_to_mount)
+    working_folder = ""
 
     if fol == []:
         #in this is the first file we add
         working_folder = "file_0"   
     else:
-        prev_index = max(list(int(f.split("_")[1]) for f in fol))
-        working_folder = "file_"+ str(int(prev_index) + 1)
+        nums = [0]*(len(fol)+2)
+        for folder in fol:
+            nums[int(folder.split("_")[1])]=1
+
+        new_folder_number = -1
+        for i in range(len(nums)):
+            if nums[i]!=1:
+                new_folder_number = i
+                break
+
+        #prev_index = max(list(int(f.split("_")[1]) for f in fol))
+        working_folder = "file_"+ str(new_folder_number)#str(int(prev_index) + 1)
     
     #print(f"to create folder {working_folder}")
     os.system(f"mkdir {path_to_mount}/{working_folder}")
@@ -81,7 +94,7 @@ def get_size(string):
 def randomize_params(core, inv_folder):
     config = inv_folder + "/config.json"
     #options: ------------------------------------------
-    domains = ["w-int","int", "soct", "zones"]
+    domains = ["w-int","int", "soct", "zones"]  
     ctracks = ["sing-mem","num", "mem"]
     analysis = ["inter", "intra", "backward"]  #inter and backward CAN NOT be both TRUE
     inline = [True, False]  
@@ -89,7 +102,9 @@ def randomize_params(core, inv_folder):
     narrowing_iterations = [1,2,3,4]
     widening_jump_set = [10,20,30,40]
     percentage = [40, 50, 60, 70, 80, 90, 95]
+    assertion_percentage = range(10, 40, 5)
     
+    #domain used for analysis
     process_files.update_json(config, "domain", random.choice(domains))
     process_files.update_json(config, "ctrack", random.choice(ctracks))
     process_files.update_json(config, "inline", random.choice(inline))
@@ -98,6 +113,15 @@ def randomize_params(core, inv_folder):
     process_files.update_json(config, "widening_delay", random.choice(widening_delay))
     process_files.update_json(config, "widening_jump_set", random.choice(widening_jump_set))
     process_files.update_json(config, "narrowing_iterations", random.choice(narrowing_iterations))
+    process_files.update_json(config, "assertion_percentage", random.choice(assertion_percentage))
+
+    if process_files.get_value_json(config, "different_domains") == True:
+        domains.remove(process_files.get_value_json(config, "domain"))
+        process_files.update_json(config, "assumption_domain", random.choice(domains))
+    else:
+        domain = process_files.get_value_json(config, "domain")
+        process_files.update_json(config, "assumption_domain", domain)
+
 
 
 def run(core, inv_folder):
@@ -144,24 +168,25 @@ def run(core, inv_folder):
         print(f"{directory}{file_name}\t core {core}\t {TYELLOW} Timeout, Memory Out or Other Error{TDEFAULT} ")
         return False
 
-    #check that initial.bc is produced:
+    #check that file.bc is produced:
     if not process_files.find_file(f"{file_name}.bc", inv_folder):
         print(f"{directory}{file_name}\t core {core}\t {TYELLOW} No .bc file was produced from clam{TDEFAULT} ")
         return False
-
+    
+    #check that initial.bc is produced:
     if not process_files.find_file(f"initial.bc", inv_folder):
-        print(f"{directory}{file_name}\t core {core}\t {TYELLOW} initial.bc file was produced from clam{TDEFAULT} ")
+        print(f"{directory}{file_name}\t core {core}\t {TYELLOW} No initial.bc file was produced from clam{TDEFAULT} ")
         return False
 
-    #Call clam to find initial warnings in inv_folder file.bc
-    #path_to_file = f"{inv_folder}/{file_name}.bc"
+
     path_initial_file = f"{inv_folder}/initial.bc"
 
-    #find new errors ------------------------------------------------------------------------------
+    #Create new folders------------------------------------------------------------------------------
+    #for each core/stronger or core/weaker folder:
     for folder in folders:
         f = process_files.get_bc_files(f"{inv_folder}/{folder}")
         
-        path_transformed_file = f"{inv_folder}/{folder}/{f}"
+
         transformation_mode = folder.split("_")[0]
         inner_inv_folder = f"{inv_folder}/{folder}"
         
@@ -172,19 +197,36 @@ def run(core, inv_folder):
             continue
 
         f = f[0]
+        path_transformed_file = f"{inv_folder}/{folder}/{f}"
 
         if file_name not in f:
             print(f"{directory}{file_name}\t core {core}\t {TTIRQUOISE} File {file_name} does not match transformed {f} {TDEFAULT} ")
             return False
 
-        mount_folder = create_new_mount_folder(core)
+        mount_folder = create_new_mount_folder(core, inv_folder)
 
+        #update the transformation mode
         process_files.update_json(config, "tr_mode", transformation_mode)
-        os.system(f"cp {inv_folder}/{folder}/log.txt {mount_folder}/log.txt") #!!ensure it exists
-        os.system(f"cp {config} {mount_folder}/config.json")
+        
+        #copy log files 
+        if process_files.find_file("log.txt", inv_folder):
+            os.system(f"cp {inv_folder}/log.txt {mount_folder}/initialLog.txt")
+        if process_files.find_file("log.txt", f"{inv_folder}/{folder}"):
+            os.system(f"cp {inv_folder}/{folder}/log.txt {mount_folder}/transformedLog.txt")
+
+        #clam's config file
+        os.system(f"cp {config} {mount_folder}/clam_config.json")
+        
         os.system(f"cp {path_initial_file} {mount_folder}/initial.bc")
         os.system(f"cp {path_transformed_file} {mount_folder}/transformed.bc")
+        os.system(f"llvm-dis {mount_folder}/initial.bc")
+        os.system(f"llvm-dis {mount_folder}/transformed.bc")
+
+        #copy file.c
         os.system(f"cp {directory}{file_name}.c {mount_folder}/{file_name}.c")
+        
+        print(f"{directory}{file_name}\t core {core}\t {TTIRQUOISE} {file_name}.c  added in {mount_folder}{TDEFAULT} ")
+        time.sleep(1)
 
     time.sleep(sleep)
     return True
@@ -246,29 +288,26 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGTERM, exit_handler)
     
+
+    mount = process_files.get_value_json("config.json", "mount_folder")
     cores = int(process_files.get_value_json("config.json", "cores"))
     dd = process_files.get_value_json("config.json", "program_folder")
     reft = int(process_files.get_value_json("config.json", "run_each_file_times")) 
+    processes = ""
+    process_pid = []    
 
+    #re-build clam
     path = "/clam/build"
     os.system(f"cmake --build {path} --target install")             #build pass with output
     
-    processes = ""
-    process_pid = []
 
-    #find bug files, so that they are not tested again
-    bug_folders = process_files.find_folders("bugs")
-    for fol in bug_folders:
-        path = "bugs" + "/" + fol
-        config = path + "/config.json"
-        bug_file = process_files.get_value_json(config, "file")
+    if process_files.find_folders(mount)==[]:
+        for core in range(cores):
+            os.system(f"mkdir {mount}/core_{str(core)}")
+    #TODO: if there are already folders & cores, then what?
+    #and if folders in mount != number of cores, then what?
 
-        if bug_file not in bugs:
-            print(f"new file bug in : {path}")
-            bugs.append(bug_file)
-
-    print(bugs)
-
+    # create invariant folders, core_ folders and subfolders
     try:        
         for core in range(cores):           
             process_files.create_new_inv_folder(core)

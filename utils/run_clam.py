@@ -96,7 +96,7 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
     an_crab = ""
     if analysis == "inter":
         an_crab = "--crab-inter"
-    elif an_crab == "backward":
+    elif analysis == "backward":
         an_crab = "--crab-backward"
 
     if directory != "":
@@ -156,12 +156,13 @@ def print_run_command(config, inv_folder, path_to_file):
     inline = int(get_value_json(config, "inline")) * "--inline"
     
     analysis = get_value_json(config, "analysis")
-    an_crab = ""
+
     if analysis == "inter":
         an_crab = "--crab-inter"
-    elif an_crab == "backward":
+    elif analysis == "backward":
         an_crab = "--crab-backward"
 
+    print(an_crab)
     if directory != "":
         if directory[-1] != "/" :
             directory = directory + "/"   

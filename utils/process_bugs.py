@@ -44,6 +44,7 @@ def add_files(file, directory, inv_folder, subfolder):
 
     #copy c file
     os.system(f"cp {directory}/{file}.c bugs/{working_folder}/{file}.c")
+    
     #copy config file
     os.system(f"cp {inv_folder}/config.json bugs/{working_folder}/config.json") 
     
