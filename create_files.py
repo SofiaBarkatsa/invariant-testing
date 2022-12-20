@@ -23,6 +23,8 @@ TPURPLE = '\033[35m'
 TTIRQUOISE = '\033[36m'
 TDEFAULT = '\033[0m'
 
+MAX_FILES=5
+
 bugs = []
 
 def exit_handler(signum, frame):
@@ -203,6 +205,7 @@ def run(core, inv_folder):
             print(f"{directory}{file_name}\t core {core}\t {TTIRQUOISE} File {file_name} does not match transformed {f} {TDEFAULT} ")
             return False
 
+        #Create folder & add files --------------------------------------------------
         mount_folder = create_new_mount_folder(core, inv_folder)
 
         #update the transformation mode
@@ -224,7 +227,8 @@ def run(core, inv_folder):
 
         #copy file.c
         os.system(f"cp {directory}{file_name}.c {mount_folder}/{file_name}.c")
-        
+        #--------------------------------------------------------------------------------
+
         print(f"{directory}{file_name}\t core {core}\t {TTIRQUOISE} {file_name}.c  added in {mount_folder}{TDEFAULT} ")
         time.sleep(1)
 
@@ -234,9 +238,10 @@ def run(core, inv_folder):
 
 
 def main(core, inv_folder):
-    
+
     signal.signal(signal.SIGALRM, timeout_handler)
     
+    mount = process_files.get_value_json("config.json", "mount_folder")    
     config = inv_folder + "/config.json"
     dd = process_files.get_value_json(config, "program_folder")
 
@@ -278,7 +283,13 @@ def main(core, inv_folder):
                 process_files.update_json(config, "directory", path)
                 
                 randomize_params(core, inv_folder)
-                run(core, inv_folder)           
+                run(core, inv_folder)   
+
+                while(len(process_files.find_folders(f"{mount}/core_{core}"))>MAX_FILES):
+                    print(f"{path}{f}\t core {core}\t  {TPURPLE}Waiting...{TDEFAULT}")
+                    time.sleep(5)
+
+
  
 
 
@@ -300,10 +311,12 @@ if __name__ == "__main__":
     path = "/clam/build"
     os.system(f"cmake --build {path} --target install")             #build pass with output
     
-
+    #create mount core_folders
     if process_files.find_folders(mount)==[]:
         for core in range(cores):
+            print(f"making core {mount}/core_{str(core)}")
             os.system(f"mkdir {mount}/core_{str(core)}")
+
     #TODO: if there are already folders & cores, then what?
     #and if folders in mount != number of cores, then what?
 

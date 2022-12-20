@@ -49,13 +49,13 @@ def rename_bugs(args):
     for f in range(len(bug_folders)):
         fol = bug_folders[f]
         name = "bug_" + str(mx + f + 1)
-        os.system(f"mv bugs/{fol} bugs/{name}")
+        os.system(f"mv {args.d}/{fol} {args.d}/{name}")
 
     bug_folders = process_files.find_folders(args.d)
     for f in range(len(bug_folders)):
         fol = bug_folders[f]
         name = "bug_" + str(f)
-        os.system(f"mv bugs/{fol} bugs/{name}")
+        os.system(f"mv {args.d}/{fol} {args.d}/{name}")
 
 
 def test_file(args):

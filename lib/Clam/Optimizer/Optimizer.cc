@@ -1157,12 +1157,11 @@ bool Optimizer::runOnModule(Module &M) {
   AttrBuilder B2; 
   //B2.addAttribute(Attribute::ReadNone);
   AttributeList as2 = AttributeList::get(ctx, AttributeList::FunctionIndex, B2);
-  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("verifier.assert", as2,
+  m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("__VERIFIER_assert", as2,
                                                         Type::getVoidTy(ctx),
                                                         Type::getInt1Ty(ctx))
                                       .getCallee());
-
-
+  //mdkw
 
   if (m_cg) {
     m_cg->getOrInsertFunction(m_assertFn);

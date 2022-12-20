@@ -157,6 +157,7 @@ def print_run_command(config, inv_folder, path_to_file):
     
     analysis = get_value_json(config, "analysis")
 
+    an_crab=""
     if analysis == "inter":
         an_crab = "--crab-inter"
     elif analysis == "backward":
