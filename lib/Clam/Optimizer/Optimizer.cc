@@ -83,6 +83,11 @@ static llvm::cl::opt<bool>
     OracleAssertions("oracle_assertions",
              llvm::cl::desc("For adding all invariants as Assertions"),
              llvm::cl::init(false));    
+
+static llvm::cl::opt<bool>
+    Smack("smack",
+             llvm::cl::desc("Assumptions will have attribute noinline as well (llvm12)"),
+             llvm::cl::init(false));  
         
 //-------------------------------------------------------------------------------------------------
 
@@ -1134,6 +1139,12 @@ bool Optimizer::runOnModule(Module &M) {
   // LLVM removed all calls to verifier.assume if marked as ReadNone
   // or ReadOnly even if we mark it as OptimizeNone.
   B.addAttribute(Attribute::InaccessibleMemOnly);  
+
+  if (Smack){
+    B.addAttribute(Attribute::NoInline);
+    //nessesary for llvm 12, when OptimizeNone is used
+  }
+
   AttributeList as = AttributeList::get(ctx, AttributeList::FunctionIndex, B);
   m_assumeFn = dyn_cast<Function>(M.getOrInsertFunction("verifier.assume", as,
                                                         Type::getVoidTy(ctx),

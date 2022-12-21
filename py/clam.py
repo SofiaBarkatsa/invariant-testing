@@ -519,6 +519,9 @@ def parseArgs(argv):
     p.add_argument('--produce-one-file', help='While using Optimizer, produce only 1 file (initial.py)',
                     dest='produce_one_file', default=False, action='store_true')
     
+    p.add_argument('--smack', help='While using Optimizer, produce files for smack (llvm 12)',
+                    dest='smack', default=False, action='store_true')
+
     ######################################################################
     # Hidden options
     ######################################################################
@@ -1057,6 +1060,9 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
 
     if args.produce_one_file:
         clam_args.append('--produce_one_file=true')
+
+    if args.smack:
+        clam_args.append('--smack=true')
 
 
     # begin hidden options

@@ -25,12 +25,14 @@ def produce_transformed_files(config, inv_folder):
     #calls clam.py with additional parameters, using the Optimizer pass
     #in order to produce N=reft files which have been transformed
 
+
     mem =  get_value_json(config, "mem")
     seed =  get_value_json(config, "seed")
     sleep =  get_value_json(config, "sleep")
     alarm =  get_value_json(config, "alarm")
     ctrack =  get_value_json(config, "ctrack")
     file_name =  get_value_json(config, "file")
+    project =  get_value_json(config, "project")
     analysis =  get_value_json(config, "analysis") 
     directory =  get_value_json(config, "directory")
     percentage =  get_value_json(config, "percentage")
@@ -46,6 +48,9 @@ def produce_transformed_files(config, inv_folder):
 
     inline = int( get_value_json(config, "inline")) * "--inline"
 
+    for_project=""
+    if project=="smack":
+        for_project = "--smack"
 
     if directory != "":
         if directory[-1] != "/" :
@@ -62,9 +67,10 @@ def produce_transformed_files(config, inv_folder):
             --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set} \
                 --c-track={ctrack}  {inline}  --c-analysis={analysis}  \
                     --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings\
-                    -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem}\
+                    -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} \
                     {inv_folder}/{file_name}.ll {enable_warnings} > /dev/null ")  # 2>/dev/null 
 
+    print(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry  --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft} --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set}  --c-track={ctrack}  {inline}  --c-analysis={analysis} --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings  -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} {inv_folder}/{file_name}.ll")
 
     return proc == 0 
 

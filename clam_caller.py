@@ -74,6 +74,7 @@ def randomize_params(core, inv_folder):
     assertion_percentage = [50] #range(10, 40, 5)
     
     #domain used for analysis
+    process_files.update_json(config, "project", "clam")
     process_files.update_json(config, "domain", random.choice(domains))
     process_files.update_json(config, "ctrack", random.choice(ctracks))
     process_files.update_json(config, "inline", random.choice(inline))
