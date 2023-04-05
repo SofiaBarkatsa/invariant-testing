@@ -235,7 +235,6 @@ std::unique_ptr<CrabBuilderManager> mkCrabBuilderManager(llvm::Module &module,
   //==============================================================//  
 
   // Translate all memory operations using seadsa
-  llvm::errs()<<CTrack<<" in clam\n";
   if (CTrack == "mem")
     cparams.setPrecision(clam::CrabBuilderPrecision::MEM);
   else if (CTrack == "num")
@@ -516,7 +515,6 @@ int main(int argc, char **argv) {
   if (!OutputFilename.empty())
     output->keep();
   
-  llvm::errs() <<" up here\n\n";
   
   /*if (!CrabOpt)
     return 0;*/
@@ -541,7 +539,6 @@ int main(int argc, char **argv) {
   llvm::Triple triple(tripleT);
   llvm::TargetLibraryInfoWrapperPass  TLIW(triple);  
   std::unique_ptr<CrabBuilderManager> clam_man = mkCrabBuilderManager(*module.get(), TLIW);
-  llvm::errs()<<"4\n";
   std::unique_ptr<ClamGlobalAnalysis> clam_analysis = mkClamGlobalAnalysis(*module.get(), *clam_man);
 
 
@@ -562,6 +559,7 @@ if (!CrabOpt)
     return 0;
 
 // adding random & oracle assertions ###################################
+  llvm::errs() <<"adding random & oracle assertions\n";
   std::unique_ptr<llvm::ToolOutputFile> output0;
   std::string OutputFilename0;
 
@@ -593,12 +591,13 @@ if (!CrabOpt)
 
 
   pass_manager0.run(*module.get()); 
-
+  llvm::errs() <<"finished adding random & oracle assertions\n";
 
 // end of adding assertions ###################################
 
 
 // test Numair's idea##############################
+  llvm::errs() <<"Adding all the correct Assumptions (Numair's Idea)\n";
   std::unique_ptr<llvm::ToolOutputFile> output3;
   std::string OutputFilename1;
 
@@ -632,6 +631,7 @@ if (!CrabOpt)
   if (!OutputFilename.empty()){ 
     output3->keep();
   }
+  llvm::errs() <<"Finished Adding all the correct Assumptions\n";
 //end of Numair's idea ################################
   
   //in case we want to skip producing more than one files
@@ -640,6 +640,7 @@ if (!CrabOpt)
   }
 
   //modifications by sofia if CrabOpt enabled
+  llvm::errs() <<"Metamorphic Testing\n";
   for (int i=0; i<NumOfFiles; i++){ 
     //sofia------ create new params ------------------------------
     llvm::errs()<<"In for loop : "<<i<<"\n";
@@ -724,6 +725,8 @@ if (!CrabOpt)
     if (!OutputFilename.empty()){ 
       output2->keep();
     }
+
+    llvm::errs() <<"End of Metamorphic Testing\n";
   }  
 
   return 0;

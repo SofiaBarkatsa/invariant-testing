@@ -735,7 +735,7 @@ public:
     //for each constraint
     for (auto cst : csts) {
       if (Value *cst_code = genCode(cst, B, ctx, DT, Name)) {
-        CallInst *ci = B.CreateCall(assumeFn, cst_code);
+        CallInst *ci = B.CreateCall(assumeFn,  B.CreateZExtOrTrunc(cst_code, Type::getInt1Ty(ctx)));
         change = true;
         if (cg) {
           (*cg)[insertFun]->
@@ -749,7 +749,7 @@ public:
           out<<"adding new assertion\n";
 
           if (assert_val){ 
-            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt1Ty(ctx))); 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
         
             if (cg) {
               (*cg)[insertFun]->
@@ -763,7 +763,7 @@ public:
           out<<"adding oracle assertion\n";
 
           if (assert_val){ 
-            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt1Ty(ctx))); 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
         
             if (cg) {
               (*cg)[insertFun]->
@@ -1164,13 +1164,15 @@ bool Optimizer::runOnModule(Module &M) {
                                       .getCallee());
 */
   // assertions crab understands: verifier.assert, crab.assert, __VERIFIER_assert, __CRAB_assert
-
+  //sos assertions NOT woking  for __VERIFIER_assert & Int1
+  //more info on lib/Clam/CfgBuilderUtils.cc
+  
   AttrBuilder B2; 
   //B2.addAttribute(Attribute::ReadNone);
   AttributeList as2 = AttributeList::get(ctx, AttributeList::FunctionIndex, B2);
   m_assertFn = dyn_cast<Function>(M.getOrInsertFunction("__VERIFIER_assert", as2,
                                                         Type::getVoidTy(ctx),
-                                                        Type::getInt1Ty(ctx))
+                                                        Type::getInt32Ty(ctx))
                                       .getCallee());
   //mdkw
 

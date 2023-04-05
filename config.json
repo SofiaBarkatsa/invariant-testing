@@ -4,6 +4,7 @@
     "run_each_file_times": 8,
     "project": "smack",
     "mount_folder": "./pipe",
+    "max_number_of_files_on_mount": 10,
     "file": "simple_vardep_1.c",
     "directory": "../c/loop-crafted",
     "enable-warnings": "2>/dev/null",

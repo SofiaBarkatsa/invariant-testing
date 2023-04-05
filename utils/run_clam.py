@@ -70,8 +70,14 @@ def produce_transformed_files(config, inv_folder):
                     -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} \
                     {inv_folder}/{file_name}.ll {enable_warnings} > /dev/null ")  # 2>/dev/null 
 
-    print(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry  --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft} --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set}  --c-track={ctrack}  {inline}  --c-analysis={analysis} --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings  -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} {inv_folder}/{file_name}.ll")
-
+    
+    if proc != 0:
+        print("\n#################################################\n To see the error, type these commands\n")
+        print(f"clang -S -emit-llvm -o {inv_folder}/{file_name}.ll {directory}{file_name}.c ")
+        print("\n")
+        print(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry  --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft} --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set}  --c-track={ctrack}  {inline}  --c-analysis={analysis} --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings  -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} {inv_folder}/{file_name}.ll")
+        print("#################################################\n")
+    
     return proc == 0 
 
 
@@ -124,8 +130,13 @@ def run_and_find_warnings(config, inv_folder, path_to_file):
             --cpu={alarm} --mem={mem} {path_to_file} {ocrab} {enable_warnings}")  # 2>/dev/null
     
     output = stream.readlines()
-    #print(output)
+    
     if look_for_analysis_results(output) == False:
+        #case of error----------
+        for i in output:
+            print(i)
+        if len(output)<1:
+            print("Sofia: no output")
         return -2, 0
     
     if analysis == "inter":

@@ -23,7 +23,6 @@ TPURPLE = '\033[35m'
 TTIRQUOISE = '\033[36m'
 TDEFAULT = '\033[0m'
 
-MAX_FILES=5
 
 bugs = []
 
@@ -247,6 +246,7 @@ def main(core, inv_folder):
     dd = process_files.get_value_json(config, "program_folder")
 
     max_file_size = process_files.get_value_json(config, "max_file_size")
+    MAX_FILES = process_files.get_value_json(config, "max_number_of_files_on_mount")
     
     folders_to_ignore = []  #["ldv-multiproperty", "sqlite", "eca-programs", "eca-rers2012", "eca-rers2018"]
     files_to_ignore = bugs
@@ -288,6 +288,8 @@ def main(core, inv_folder):
 
                 while(len(process_files.find_folders(f"{mount}/core_{core}"))>MAX_FILES):
                     print(f"{path}{f}\t core {core}\t  {TPURPLE}Waiting...{TDEFAULT}")
+                    #sleep so that we give the other project some time to process
+                    #the files produced
                     time.sleep(5)
 
 

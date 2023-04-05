@@ -71,7 +71,7 @@ public:
   }
 
   virtual StringRef getPassName() const {
-    return "Clam: Delete verifier.assume instances";
+    return "Clam: Delete crab produced commands";
   }
 };
 
