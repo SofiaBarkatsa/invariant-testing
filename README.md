@@ -1,5 +1,6 @@
-# Metamorphic testing of static analysis using inferred invariant transformations
 
+# Metamorphic testing of static analysis using inferred invariant transformations
+This branch supports llvm14
 
 # Installation:
 
@@ -7,7 +8,7 @@
 git clone https://github.com/SofiaBarkatsa/invariant-testing.git
 ```
 This project uses [Crab](https://github.com/seahorn/crab) library for program analysis
-and [LLVM](https://github.com/llvm/llvm-project) version 10
+and [LLVM](https://github.com/llvm/llvm-project) version 14
 
 For this project [rapidjson](https://github.com/Tencent/rapidjson) is also required
 and can be install using the command:

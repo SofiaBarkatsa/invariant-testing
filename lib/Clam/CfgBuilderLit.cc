@@ -157,7 +157,7 @@ var_t crabLitFactoryImpl::mkArrayVar(Region rgn) {
     type = crab::variable_type(ARR_BOOL_TYPE);
     break;
   default:
-    CLAM_ERROR("unsupported region type ", rgn);
+    CLAM_ERROR("unsupported region type " << rgn);
   }
 
   var_t res(m_vfac.get(), type);
@@ -181,8 +181,6 @@ crabLitFactoryImpl::regionTypeToCrabType(RegionInfo rgnInfo) {
   case region_type_t::UNTYPED_REGION:
     type = crab::variable_type(REG_UNKNOWN_TYPE);
     break;
-  default:
-    CLAM_ERROR("unsupported region type ", rgnInfo);
   }
   return type;
 }
@@ -212,7 +210,7 @@ var_t crabLitFactoryImpl::mkScalarVar(Region rgn) {
   
   unsigned bitwidth = 0;
   if (const Value *v = rgn.getSingleton()) {
-    Type *ty = cast<PointerType>(v->getType())->getElementType();
+    Type *ty = cast<PointerType>(v->getType())->getPointerElementType();
     bitwidth = ty->getIntegerBitWidth();
     if (rgn.getRegionInfo().getType().first == region_type_t::INT_REGION &&
         bitwidth <= 1) {
@@ -234,7 +232,7 @@ var_t crabLitFactoryImpl::mkScalarVar(Region rgn) {
     type = crab::variable_type(BOOL_TYPE, 1);
     break;
   default:
-    CLAM_ERROR("unsupported region type", rgn);
+    CLAM_ERROR("unsupported region type" << rgn);
   }
 
   var_t res(m_vfac.get(), type);
@@ -268,8 +266,8 @@ var_t crabLitFactoryImpl::mkArrayVar(RegionInfo rgnInfo) {
     type = crab::variable_type(ARR_BOOL_TYPE);
     break;
   default:
-    CLAM_ERROR("unsupported region type for making an array variable ",
-               rgnInfo);
+    CLAM_ERROR("unsupported region type for making an array variable "
+               << rgnInfo);
   }
   return var_t(m_vfac.get(), type);
 }

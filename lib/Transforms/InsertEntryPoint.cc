@@ -23,35 +23,33 @@ static llvm::cl::opt<std::string>
 namespace clam {
 
 class InsertEntryPoint : public ModulePass {
-  DenseMap<const Type *, Constant *> m_ndfn;
+  DenseMap<const Type *, FunctionCallee> m_ndfn;
 
-  Constant *getNondetFn(Type *type, Module &M) {
-    Constant *res = m_ndfn[type];
-    if (res == NULL) {
-      res = dyn_cast<Constant>(
-          M.getOrInsertFunction(
-               "verifier.nondet." + std::to_string(m_ndfn.size()), type)
-              .getCallee());
-
-      // -- say that f does not access memory will make llvm
-      // -- assume that all calls to it return the same value
-      // if (Function *f = dyn_cast<Function>(res))
-      // {
-      //   // f->setDoesNotAccessMemory (true);
-      //   // f->setDoesNotAlias (0);
-      // }
-      m_ndfn[type] = res;
+  FunctionCallee getNondetFn(Type *type, Module &M) {
+    auto it = m_ndfn.find(type);
+    if (it != m_ndfn.end()) {
+      return it->second;
     }
+    
+    FunctionCallee res =
+      M.getOrInsertFunction("verifier.nondet." + std::to_string(m_ndfn.size()), type);
+    // -- say that f does not access memory will make llvm
+    // -- assume that all calls to it return the same value
+    // if (Function *f = dyn_cast<Function>(res))
+    // {
+    //   // f->setDoesNotAccessMemory (true);
+    //   // f->setDoesNotAlias (0);
+    // }    
+    m_ndfn[type] = res;
     return res;
   }
 
-  
 public:
   static char ID;
 
   InsertEntryPoint() : ModulePass(ID) {}
 
-  bool runOnModule(Module &M) {
+  virtual bool runOnModule(Module &M) override {
 
     if (M.getFunction("main")) {
       return false;
@@ -82,10 +80,10 @@ public:
     // -- create a call with non-deterministic actual parameters
     SmallVector<Value *, 16> Args;
     for (auto &A : Entry->args()) {
-      Constant *ndf = getNondetFn(A.getType(), M);
+      FunctionCallee ndf = getNondetFn(A.getType(), M);
       Args.push_back(B.CreateCall(ndf));
     }
-    CallInst *CI = B.CreateCall(Entry, Args);
+    B.CreateCall(Entry, Args);
 
     // -- return of main
     // our favourite exit code
@@ -93,11 +91,11 @@ public:
     return true;
   }
 
-  void getAnalysisUsage(AnalysisUsage &AU) {
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const override {
     // AU.setPreservesAll ();
   }
 
-  virtual StringRef getPassName() const {
+  virtual StringRef getPassName() const override {
     return "Clam: insert an entry point if main does not exist";
   }
 };

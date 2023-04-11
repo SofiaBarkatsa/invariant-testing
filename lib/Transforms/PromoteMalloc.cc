@@ -1,4 +1,3 @@
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Pass.h"
@@ -17,7 +16,7 @@ public:
 
   PromoteMalloc() : FunctionPass(ID) {}
 
-  bool runOnFunction(Function &F) {
+  virtual bool runOnFunction(Function &F) override {
     if (F.empty())
       return false;
 
@@ -30,24 +29,24 @@ public:
     SmallVector<Instruction *, 16> kill;
 
     for (auto &I : llvm::make_range(inst_begin(F), inst_end(F))) {
-      if (!isa<CallInst>(&I))
-        continue;
-
-      CallSite CS(&I);
-      const Function *fn = CS.getCalledFunction();
-      if (!fn && CS.getCalledValue())
-        fn = dyn_cast<const Function>(CS.getCalledValue()->stripPointerCasts());
-
-      if (fn && fn->getName().equals("malloc")) {
-        if (PointerType *pty = dyn_cast<PointerType>(I.getType())) {
-          unsigned addrSpace = 0;
-          Value *nv = new AllocaInst(pty->getPointerElementType(), addrSpace,
-                                     CS.getArgument(0), "malloc", &I);
-          I.replaceAllUsesWith(nv);
-          changed = true;
-        }
-      } else if (fn && fn->getName().equals("free"))
-        kill.push_back(&I);
+      if (CallInst *CI = dyn_cast<CallInst>(&I)) {
+	
+	CallBase &CB = *CI;
+	const Function *fn = CB.getCalledFunction();
+	if (!fn && CB.getCalledOperand())
+	  fn = dyn_cast<const Function>(CB.getCalledOperand()->stripPointerCasts());
+	
+	if (fn && fn->getName().equals("malloc")) {
+	  if (PointerType *pty = dyn_cast<PointerType>(I.getType())) {
+	    unsigned addrSpace = 0;
+	    Value *nv = new AllocaInst(pty->getPointerElementType(), addrSpace,
+				       CB.getArgOperand(0), "malloc", &I);
+	    I.replaceAllUsesWith(nv);
+	    changed = true;
+	  }
+	} else if (fn && fn->getName().equals("free"))
+	  kill.push_back(&I);
+      }
     }
 
     // -- remove all calls to free(). This is too much, but ensures
@@ -58,11 +57,11 @@ public:
     return changed;
   }
 
-  void getAnalysisUsage(AnalysisUsage &AU) const {
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const override {
     // AU.setPreservesAll ();
   }
 
-  virtual StringRef getPassName() const {
+  virtual StringRef getPassName() const override {
     return "Clam: Promote malloc to alloca instructions";
   }
 };

@@ -21,9 +21,13 @@
 #include "clam/CfgBuilder.hh"
 #include "clam/Clam.hh"
 #include "clam/Transforms/Optimizer.hh"
+
+#include "crab/analysis/abs_transformer.hpp"  //need to delete ?
+#include "crab/numbers/wrapint.hpp"       //need to delete ?
+
+
 #include "crab/analysis/abs_transformer.hpp"
 #include "crab/numbers/wrapint.hpp"
-
 #include "crab/config.h"
 #include "crab/support/debug.hpp"
 
@@ -35,9 +39,22 @@
 
 using namespace llvm;
 
+/**
+ * Optimize LLVM bitcode by using invariants produced by Clam.
+ * 
+ * This module translates Crab linear constraints into LLVM bitcode.
+ * There are two issues that makes the code a bit more
+ * complicated. First, Clam only keeps invariants at the entry or exit
+ * of each basic block. Therefore, depending on user options we need
+ * to re-run the abstract interpreter (only up to the end of a block)
+ * to produce invariants at each location. Second, most Clam numerical
+ * abstract domains use signed mathematical integers. However, LLVM
+ * uses machine arithmetic. Therefore, there is a filtering process to
+ * make sure we only generate LLVM bitcode for linear constraints
+ * whose validity still holds on machine arithmetic.
+ **/
+
 /* Begin LLVM pass options */
-
-
 static cl::opt<clam::InvariantsLocation>
 InvLoc("crab-opt-add-invariants",
     cl::desc("Instrument code with (linear) invariants at specific location"),
@@ -224,14 +241,14 @@ static bool requireLoopInfo(InvariantsLocation val) {
 }
 
 
-
 // Convert a Crab expression into LLVM bitcode
 class CodeExpander {
 private:  
   enum bin_op_t { ADD, SUB, MUL };
 
-  static Value *mkBinOp(bin_op_t Op, IRBuilder<> B, Value *LHS, Value *RHS,
-		 const Twine &Name) {
+
+  static Value *mkBinOp(bin_op_t Op, IRBuilder<> &B, Value *LHS, Value *RHS,
+			const Twine &Name) {
     assert(LHS->getType()->isIntegerTy() && RHS->getType()->isIntegerTy());
     switch (Op) {
     case ADD:
@@ -240,7 +257,6 @@ private:
       return B.CreateSub(LHS, RHS, Name);
     case MUL:
       return B.CreateMul(LHS, RHS, Name);
-    default:;
     }
   }
 
@@ -267,7 +283,30 @@ private:
     }
     return nullptr;
   }
+
+  // static Value* normalizeCst(Value *Cst) {
+  //   Value *ICmpLHS;
+  //   ConstantInt *ICmpRHS;
+  //   Value *X;
+  //   ICmpInst::Predicate Pred;
+  //   if (match(Cst, m_ICmp(Pred, m_Value(ICmpLHS), m_ConstantInt(ICmpRHS)))) {
+  //     if (Pred == ICmpInst::ICMP_SLE) {
+  // 	if (ICmpRHS->isNegative() && match(ICmpLHS, m_Neg(m_Value(X)))) {
+  // 	  // Rewrite sub 0, %x <= -k into x >= k
+  // 	  Value *normCst = new ICmpInst(cast<Instruction>(Cst),
+  // 					ICmpInst::ICMP_SGE, X,
+  // 					ConstantInt::get(X->getType(),
+  // 							 ICmpRHS->getValue().abs()),
+  // 					Cst->getName());
+  // 	  cast<Instruction>(Cst)->replaceAllUsesWith(normCst);
+  // 	  return normCst;
+  // 	}
+  //     }
+  //   }
+  //   return Cst;
+  // }
   
+
   //###############################################################################
   // function by sofia-------------------------------
   static Value *cstToValue(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx, const Twine &Name, 
@@ -397,16 +436,14 @@ private:
   static bool mayOverflow (const number_t &n, crab::wrapint::bitwidth_t b) {
     auto max = crab::wrapint::get_signed_max(b).get_signed_bignum();
     auto min = crab::wrapint::get_signed_min(b).get_signed_bignum();
-    //out<<"max = "<<int64_t(max)<<", min = "<<int64_t(min)<<"\n";
     return (n < min || n > max);
   };
 
-
-
   // post: return a value of bool type(Int1Ty) that contains the
   // computation of cst
-  static Value *genCode(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
-		 DominatorTree *DT, const Twine &Name) {
+  static Value *genCode(const lin_cst_t &cst, IRBuilder<> &B, LLVMContext &ctx,
+			DominatorTree *DT, const Twine &Name) {
+    
     if (cst.is_tautology()) {
       return nullptr; // mkBool(ctx, true);
     }
@@ -683,6 +720,7 @@ private:
       if (mayOverflow(n, ty->getBitWidth())) {
 	      return nullptr;
       }
+
       varname_t v = t.second.name();
       Value *vv = mkVar(v);
       assert(vv);
@@ -728,9 +766,10 @@ public:
    *   llvm.assume(b2)
    *   ...
    **/
-  bool genCode(lin_cst_sys_t csts, IRBuilder<> B, LLVMContext &ctx,
+  bool genCode(const lin_cst_sys_t &csts, IRBuilder<> &B, LLVMContext &ctx,
 	       Function *assumeFn, CallGraph *cg, DominatorTree *DT,
-	       const Function *insertFun, const Twine &Name = "") const{
+	       const Function *insertFun, const Twine &Name = "") const {
+
     bool change = false;
     //for each constraint
     for (auto cst : csts) {
@@ -1132,10 +1171,11 @@ bool Optimizer::runOnModule(Module &M) {
   //--------------------------------------------------------------------
 
   LLVMContext &ctx = M.getContext();
-  AttrBuilder B;
+  AttrBuilder B(ctx);
   B.addAttribute(Attribute::NoUnwind);
   B.addAttribute(Attribute::NoRecurse);
-  B.addAttribute(Attribute::OptimizeNone);  
+  B.addAttribute(Attribute::OptimizeNone);
+  B.addAttribute(Attribute::NoInline);
   // LLVM removed all calls to verifier.assume if marked as ReadNone
   // or ReadOnly even if we mark it as OptimizeNone.
   B.addAttribute(Attribute::InaccessibleMemOnly);  
@@ -1300,6 +1340,7 @@ bool Optimizer::runOnFunction(Function &F) {
 }
   
 /* Pass code starts here */
+<<<<<<< HEAD
 
 // changed by Jorge-------------------------------------------------------
 OptimizerPass::OptimizerPass():
@@ -1308,6 +1349,11 @@ OptimizerPass::OptimizerPass():
 OptimizerPass::OptimizerPass(ClamGlobalAnalysis *clam):
   ModulePass(ID), m_impl(nullptr), m_clam(clam) {}
 //------------------------------------------------------------------------
+
+/*  Code from pull  
+OptimizerPass::OptimizerPass(ClamGlobalAnalysis *clam):
+  ModulePass(ID), m_impl(nullptr), m_clam(clam) {}
+*/
   
 bool OptimizerPass::runOnModule(Module &M) {
   if (InvLoc == InvariantsLocation::NONE &&
@@ -1324,8 +1370,9 @@ bool OptimizerPass::runOnModule(Module &M) {
 
   //added by jorge-----------------------------------------------
   // Get clam
+
   if (!m_clam) {
-     m_clam = &(getAnalysis<ClamPass>().getClamGlobalAnalysis());
+    m_clam = &(getAnalysis<ClamPass>().getClamGlobalAnalysis());
   }
   //---------------------------------------------------------------
 
@@ -1339,7 +1386,6 @@ bool OptimizerPass::runOnModule(Module &M) {
     if (requireLoopInfo(InvLoc))    
       li_map[&F] = &(getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo());
   }
-
 
   m_impl.reset(new Optimizer(*m_clam, cg,
 			     [&dt_map](Function *F) {
@@ -1355,12 +1401,19 @@ bool OptimizerPass::runOnModule(Module &M) {
 }
 
 void OptimizerPass::getAnalysisUsage(AnalysisUsage &AU) const {
+/*  Old Code from llvm10
   //changed by Jorge----------------------------------------
   if (!m_clam) {
      AU.addRequired<clam::ClamPass>();
   }
   //---------------------------------------------------------
   AU.addRequired<UnifyFunctionExitNodes>();
+*/
+  if (!m_clam) {
+    AU.addRequired<clam::ClamPass>();
+  }
+  AU.addRequired<UnifyFunctionExitNodesLegacyPass>();
+
   AU.addRequired<CallGraphWrapperPass>();
   AU.addPreserved<CallGraphWrapperPass>();
   if (requireDominatorTree(InvLoc)) {
@@ -1372,6 +1425,7 @@ void OptimizerPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 char clam::OptimizerPass::ID = 0;
+<<<<<<< HEAD
 
 
 // modified by Jorge---------------------------------------------------
@@ -1381,6 +1435,7 @@ llvm::Pass *createOptimizerPass(ClamGlobalAnalysis *clam = nullptr, int seed=0, 
   Mode = mode;                        // sofia
   AddAssertions = add_assertions;     // sofia
   Subfolder = subfolder;              // sofia
+
   return new OptimizerPass(clam);
 }
  

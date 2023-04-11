@@ -2,7 +2,6 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Demangle/Demangle.h"
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
@@ -55,7 +54,7 @@ public:
 
   ExternalizeFunctions() : ModulePass(ID) {}
 
-  virtual bool runOnModule(Module &M) {
+  virtual bool runOnModule(Module &M) override {
     if (ExternalizeFunctionNames.begin() == ExternalizeFunctionNames.end())
       return false;
 
@@ -85,9 +84,8 @@ public:
 	  if (isa<LoadInst>(I) || isa<StoreInst>(I)) {
 	    numMemInsts++;
 	  }
-	  if (CallInst *CI = dyn_cast<CallInst>(&I)) {
-	    CallSite CS(CI);
-	    if (Function* calleeF = CS.getCalledFunction()) {
+	  if (CallBase *CB = dyn_cast<CallBase>(&I)) {
+	    if (Function* calleeF = CB->getCalledFunction()) {
 	      if (!calleeF->empty()) {
 		skippedFunctions.insert(calleeF);
 	      }
@@ -95,7 +93,7 @@ public:
 	  }
 	}
       }
-      errs() << "EXTERNALIZING " << llvm::demangle(F.getName()) << " with "
+      errs() << "EXTERNALIZING " << llvm::demangle(F.getName().str()) << " with "
 	     << numMemInsts << " memory instructions and ";
       if (skippedFunctions.empty()) {
 	errs() << " no calls\n";
@@ -145,9 +143,11 @@ public:
     return Change;
   }
 
-  void getAnalysisUsage(AnalysisUsage &AU) { AU.setPreservesAll(); }
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesAll();
+  }
 
-  virtual StringRef getPassName() const {
+  virtual StringRef getPassName() const override {
     return "Externalize all selected functions";
   }
 };

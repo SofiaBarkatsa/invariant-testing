@@ -43,7 +43,7 @@ CRAB_MEMORY_OUT = 27
 CRAB_SEGFAULT = 28 ## unexpected segfaults
 #############################################################
 
-llvm_version = "10.0"
+llvm_version = "14.0"
 
 def isexec(fpath):
     if fpath is None:
@@ -183,8 +183,10 @@ def parseArgs(argv):
                          formatter_class=a.RawTextHelpFormatter)
     p.add_argument ('-oll', '--oll', dest='asm_out_name', metavar='FILE',
                     help='Output analyzed bitecode')
-    p.add_argument ('-ocrab', '--ocrab', dest='crab_out_name', metavar='FILE',
+    p.add_argument ('-ocrab', '--ocrab', dest='crabir_out_name', metavar='FILE',
                     help='Output analyzed CrabIR with (optionally) annotations')
+    p.add_argument ('-ojson', '--ojson', dest='json_out_name', metavar='FILE',
+                    help='Output invariants to JSON format')
     p.add_argument('--log', dest='log', default=None,
                     metavar='STR', help='Log level for clam')
     p.add_argument('-o', dest='out_name', metavar='FILE',
@@ -315,11 +317,12 @@ def parseArgs(argv):
                           "- soct: octagons domain using DBMs in Split Normal Form\n"
                           "- oct: octagons domain from Apron or Elina\n"
                           "- pk: polyhedra domain from Apron or Elina\n"
+                          "- pk-pplite: polyhedra domain from PPLite\n"                   
                           "- rtz: reduced product of term-dis-int with zones\n"
                           "- w-int: wrapped intervals\n",
                     choices=['int', 'sign-const', 'ric', 'term-int',
                              'dis-int', 'term-dis-int', 'boxes',
-                             'zones', 'soct', 'oct', 'pk', 'rtz',
+                             'zones', 'soct', 'oct', 'pk', 'pk-pplite', 'rtz',
                              'w-int'],
                     dest='crab_dom', default='zones')
     p.add_argument('--crab-dom-params', dest='crab_dom_params', default=None,
@@ -411,8 +414,17 @@ def parseArgs(argv):
                     help='Promote verifier.assume calls to llvm.assume intrinsics',
                     dest='crab_promote_assume', default=False, action='store_true')
     p.add_argument('--crab-check',
-                   help='Check properties (default no check)',
-                   choices=['none', 'assert', 'null', 'uaf', 'bounds', 'null-legacy', 'uaf-legacy', 'is-deref'],
+                   help="Check properties (default none):\n"
+                   "- assert: user-defined assertions via __CRAB_assert\n"
+                   "- null-legacy: insert __CRAB_assert calls in LLVM IR for null dereference errors\n"                   
+                   "- null: insert CrabIR assertions for null dereference errors\n"
+                   "- uaf-legacy: insert __CRAB_assert calls in LLVM IR for use-after-free errors\n"                   
+                   "- uaf: insert CrabIR assertions for use-after-free errors\n"
+                   "- bounds: insert CrabIR assertions and ghost code for buffer overflow errors\n"
+                   "  (instrumentation is not complete: lack of modeling pointers stored in memory)\n"
+                   "- is-deref: insert CrabIR assertions for proving that calls to LLVM function sea.is_dereferenceable cannot fail\n"
+                   "  (this option is used mostly by SeaHorn which adds the calls to sea.is_dereferenceable)\n",
+                   choices=['none','assert','null-legacy','null','uaf-legacy','uaf','bounds','is-deref'],
                    dest='crab_check', default='none')
     add_bool_argument(p, 'crab-check-only-typed', default=False,
                       help='Add checks only on typed regions (only for null and uaf). False by default',
@@ -426,10 +438,6 @@ def parseArgs(argv):
                          '>=2: error and warning checks\n' +
                          '>=3: error, warning, and safe checks',
                     dest='check_verbose', type=int, default=0)
-    p.add_argument('--crab-print-summaries',
-                   #help='Display computed summaries (if --crab-inter)',
-                   help=a.SUPPRESS,
-                   dest='print_summs', default=False, action='store_true')
     add_bool_argument(p, 'crab-print-cfg',
                     help='Display Crab CFG',
                     dest='print_cfg', default=False)
@@ -439,12 +447,19 @@ def parseArgs(argv):
     add_bool_argument(p, 'crab-print-invariants',
                     help='Print invariants',
                     dest='crab_print_invariants', default=True)
+    p.add_argument('--crab-print-invariants-kind',
+                    help='Specify which invariants should be printed (only if crab-print-invariants=true)',
+                    choices=['blocks', 'loops'],
+                    dest='crab_print_invariants_kind', default='blocks')
     add_bool_argument(p, 'crab-print-unjustified-assumptions',
-                    help='Print unjustified assumptions done by the analyzer (experimental, only for integer overflows)',
+                    help='Print unjustified assumptions done by the analyzer (very very experimental, only for integer overflows and for intra-procedural analysis)',
                     dest='print_assumptions', default=False)
     add_bool_argument(p, 'crab-print-voi',
-                    help='Print variables-of-influence of assertions',
+                    help='Print variables-of-influence of assertions (only if --crab-inter)',
                     dest='print_voi', default=False)
+    add_bool_argument(p, 'crab-print-ghost-variables', default=False,
+                      help='Print all ghost variables in the invariants. False by default.',
+                      dest='crab_keep_shadows')
     p.add_argument('--crab-stats',
                     help='Display crab statistics',
                     dest='print_stats', default=False, action='store_true')
@@ -538,8 +553,6 @@ def parseArgs(argv):
     # Choose between own crab way of naming values and instnamer
     add_bool_argument(p, 'crab-name-values', default=True,
                       help=a.SUPPRESS, dest='crab_name_values')
-    add_bool_argument(p, 'crab-keep-shadows', default=False,
-                      help=a.SUPPRESS, dest='crab_keep_shadows')
     add_bool_argument(p, 'crab-enable-bignums', default=False,
                       help=a.SUPPRESS, dest='crab_enable_bignums')
     #### END CRAB
@@ -690,6 +703,8 @@ def clang(in_name, out_name, args, arch=32, extra_args=[]):
     clang_args.append('-disable-O0-optnone')
     # To allow syntax such as __declspec(noalias) in C programs
     clang_args.append('-fdeclspec')
+    # best-effort to keep C names 
+    clang_args.append ('-fno-discard-value-names')    
     clang_args.extend (extra_args)
     clang_args.append ('-m{0}'.format (arch))
     # To avoid the error:
@@ -749,11 +764,19 @@ def optLlvm(in_name, out_name, args, extra_args=[], cpu = -1, mem = -1):
     # for now, there is no option to undo this switch
     opt_args.append('--simplifycfg-sink-common=false')
 
-    # disable always vectorization
-    ## With LLVM 10: loop vectorization must be enabled
+    ## Unavailable after porting to LLVM12    
+    ### REVISIT: these flags are gone. See here some discussion
+    ### https://reviews.llvm.org/D77989.
+    ### It seems they were not having much effect anyway.
     # opt_args.append('--disable-loop-vectorization')
-    opt_args.append('--disable-slp-vectorization')
+    # opt_args.append('--disable-slp-vectorization')
 
+
+    # LLVM 12 onwards we need to disable slp vectorization (vec instr not handled by sea-dsa and opsem)
+    # vectorization for loops is split into multiple options so not adding any here.
+    # See https://sourcegraph.com/github.com/llvm/llvm-project@release/12.x/-/blob/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp
+    opt_args.extend (['--vectorize-slp=false'])    
+    
     ## Unavailable after porting to LLVM10
     # if is_seaopt:
     #     # disable always loop rotation. Loop rotation converts to loops
@@ -986,21 +1009,27 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
 
     if args.crab_promote_assume:
         clam_args.append('--crab-promote-assume')
-        
+
     if args.crab_check != 'none':
         clam_args.append('--crab-check')
         if args.crab_check == 'null-legacy':
             clam_args.append('--clam-null-check-legacy')
+        elif args.crab_check == 'null':
+            clam_args.append('--crab-null-check')            
         elif args.crab_check == 'uaf-legacy':
             clam_args.append('--clam-uaf-check-legacy')
-        elif args.crab_check == 'null':
-            clam_args.append('--crab-null-check')
+            ## special option for the region domain
+            clam_args.extend(['-crab-dom-param', 'region.deallocation=true'])
         elif args.crab_check == 'uaf':
             clam_args.append('--crab-uaf-check')
+            ## special option for the region domain
+            clam_args.extend(['-crab-dom-param', 'region.deallocation=true'])
         elif args.crab_check == 'bounds':
             clam_args.append('--crab-bounds-check')
         elif args.crab_check == 'is-deref':
             clam_args.append('--crab-is-deref-check')
+            ## special option for the region domain
+            clam_args.extend(['-crab-dom-param', 'region.is_dereferenceable=true'])            
         if args.crab_check in ['null-legacy', 'uaf-legacy', 'null', 'uaf', 'bounds']:
             if args.crab_check_only_typed:
                 clam_args.append('--crab-check-only-typed-regions=true')
@@ -1010,9 +1039,9 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
                 clam_args.append('--crab-check-only-noncyclic-regions=true')
             else:
                 clam_args.append('--crab-check-only-noncyclic-regions=false')
+                         
     if args.check_verbose:
         clam_args.append('--crab-check-verbose={0}'.format(args.check_verbose))
-    if args.print_summs: clam_args.append('--crab-print-summaries')
     if args.print_cfg:
         clam_args.append('--crab-print-cfg=true')
     else:
@@ -1025,9 +1054,12 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
     if args.crab_sanity_checks: clam_args.append('--crab-sanity-checks')
     if args.crab_cfg_simplify: clam_args.append('--crab-cfg-simplify')
     if args.crab_print_invariants:
-        clam_args.append('--crab-print-invariants=true')
+        if args.crab_print_invariants_kind == 'loops':
+            clam_args.append('--crab-print-invariants=loops')
+        else:
+            clam_args.append('--crab-print-invariants=blocks')
     else:
-        clam_args.append('--crab-print-invariants=false')
+        clam_args.append('--crab-print-invariants=none')
     if args.store_invariants:
         clam_args.append('--crab-store-invariants=true')
     else:
@@ -1035,10 +1067,13 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
     if args.crab_dot_cfg:
         clam_args.append('--crab-dot-cfg=true')
     else:
-        clam_args.append('--crab-dot-cfg=false')
-    if args.crab_out_name is not None:
-        clam_args.append('--ocrab={0}'.format(args.crab_out_name))
-    
+        clam_args.append('--crab-dot-cfg=false')  
+
+    if args.crabir_out_name is not None:
+        clam_args.append('--ocrab={0}'.format(args.crabir_out_name))
+    if args.json_out_name is not None:
+        clam_args.append('--ojson={0}'.format(args.json_out_name))
+
 
     # SOFIA OPTIONS:
     #these parameters are always appended
@@ -1063,7 +1098,7 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
 
     if args.smack:
         clam_args.append('--smack=true')
-
+       
 
     # begin hidden options
     if args.crab_dsa_unknown: clam_args.append('--crab-dsa-disambiguate-unknown')

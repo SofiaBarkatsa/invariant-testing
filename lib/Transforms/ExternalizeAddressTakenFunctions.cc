@@ -1,7 +1,6 @@
 /* Externalize uses of functions whose address have been taken */
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
@@ -47,7 +46,7 @@ public:
 
   ExternalizeAddressTakenFunctions() : ModulePass(ID) {}
 
-  virtual bool runOnModule(Module &M) {
+  virtual bool runOnModule(Module &M) override {
     bool Changed = false;
     for (auto &F : M) {
 
@@ -82,8 +81,8 @@ public:
             continue;
 
           if (isa<CallInst>(FU) || isa<InvokeInst>(FU)) {
-            ImmutableCallSite CS(dyn_cast<Instruction>(FU));
-            if (!CS.isCallee(U)) {
+	    CallBase *CB = dyn_cast<CallBase>(FU);
+            if (!CB->isCallee(U)) {
               U->set(NF);
               Changed = true;
             }
@@ -95,7 +94,7 @@ public:
 	      // the alias.
 	      bool AliasUsedInCall = false;
 	      for (auto *u : a->users()) {
-		if (auto *CI = dyn_cast<CallInst>(u)) {
+		if (isa<CallInst>(u)) {
 		  // if alias is used in a call, replace all uses with F
 		  a->replaceAllUsesWith(&F);
 		  AliasUsedInCall = true;
@@ -151,11 +150,11 @@ public:
     }
     return Changed;
   }
-  void getAnalysisUsage(AnalysisUsage &AU) const {
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const override {
     // AU.setPreservesAll ();
   }
 
-  StringRef getPassName() const {
+  virtual StringRef getPassName() const override {
     return "Clam: Externalize uses of address-taken functions";
   }
 };
