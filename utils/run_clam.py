@@ -43,7 +43,6 @@ def produce_transformed_files(config, inv_folder):
     widening_jump_set =  get_value_json(config, "widening_jump_set")
     narrowing_iterations =  get_value_json(config, "narrowing_iterations")
     assertion_percentage =  get_value_json(config, "assertion_percentage")
-    random_assertions =  int(get_value_json(config, "random_assertions"))* assertion_percentage
     oracle_assertions =  int(get_value_json(config, "oracle_assertions"))* "--oracle-assertions"
 
     inline = int( get_value_json(config, "inline")) * "--inline"

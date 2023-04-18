@@ -43,6 +43,8 @@
 #include <fstream>
 #include "llvm/Transforms/Utils/Cloning.h"
 
+//#include "llvm/Transforms/Scalar/LoopUnrollPass.h"
+
 extern llvm::cl::OptionCategory ClamOptCat;
 
 // REVISIT
@@ -413,6 +415,7 @@ int main(int argc, char **argv) {
    * too poor results. Passes that are only for improving precision
    * should be run in clam-pp.
    **/
+
 
   // kill unused internal global
   pass_manager.add(llvm::createGlobalDCEPass());

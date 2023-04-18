@@ -103,7 +103,6 @@ def randomize_params(core, inv_folder):
     narrowing_iterations = [1,2,3,4]
     widening_jump_set = [10,20,30,40]
     percentage = [40, 50, 60, 70, 80, 90, 95]
-    assertion_percentage = range(10, 40, 5)
     
     #domain used for analysis
     process_files.update_json(config, "project", "smack")
@@ -115,7 +114,6 @@ def randomize_params(core, inv_folder):
     process_files.update_json(config, "widening_delay", random.choice(widening_delay))
     process_files.update_json(config, "widening_jump_set", random.choice(widening_jump_set))
     process_files.update_json(config, "narrowing_iterations", random.choice(narrowing_iterations))
-    process_files.update_json(config, "assertion_percentage", random.choice(assertion_percentage))
 
     if process_files.get_value_json(config, "different_domains") == True:
         domains.remove(process_files.get_value_json(config, "domain"))
@@ -124,6 +122,13 @@ def randomize_params(core, inv_folder):
         domain = process_files.get_value_json(config, "domain")
         process_files.update_json(config, "assumption_domain", domain)
 
+
+    random_assertions = int(process_files.get_value_json(config, "random_assertions"))
+    if random_assertions == 0:
+        process_files.update_json(config, "assertion_percentage", 0)
+    else:
+        assertion_percentage = range(10, 60, 5) 
+        process_files.update_json(config, "assertion_percentage", random.choice(assertion_percentage))
 
 
 def run(core, inv_folder):
