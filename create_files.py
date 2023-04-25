@@ -113,7 +113,9 @@ def randomize_params(core, inv_folder):
     process_files.update_json(config, "percentage", random.choice(percentage))
     process_files.update_json(config, "widening_delay", random.choice(widening_delay))
     process_files.update_json(config, "widening_jump_set", random.choice(widening_jump_set))
+    process_files.update_json(config, "assertion_percentage", random.choice(range(10, 60, 5)))
     process_files.update_json(config, "narrowing_iterations", random.choice(narrowing_iterations))
+
 
     if process_files.get_value_json(config, "different_domains") == True:
         domains.remove(process_files.get_value_json(config, "domain"))
@@ -122,13 +124,6 @@ def randomize_params(core, inv_folder):
         domain = process_files.get_value_json(config, "domain")
         process_files.update_json(config, "assumption_domain", domain)
 
-
-    random_assertions = int(process_files.get_value_json(config, "random_assertions"))
-    if random_assertions == 0:
-        process_files.update_json(config, "assertion_percentage", 0)
-    else:
-        assertion_percentage = range(10, 60, 5) 
-        process_files.update_json(config, "assertion_percentage", random.choice(assertion_percentage))
 
 
 def run(core, inv_folder):

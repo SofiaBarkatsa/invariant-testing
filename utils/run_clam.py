@@ -35,6 +35,7 @@ def produce_transformed_files(config, inv_folder):
     project =  get_value_json(config, "project")
     analysis =  get_value_json(config, "analysis") 
     directory =  get_value_json(config, "directory")
+    # percentage: how many assumptions will transform
     percentage =  get_value_json(config, "percentage")
     domain = get_value_json(config, "assumption_domain")
     reft =  get_value_json(config, "run_each_file_times")
@@ -44,7 +45,10 @@ def produce_transformed_files(config, inv_folder):
     narrowing_iterations =  get_value_json(config, "narrowing_iterations")
     assertion_percentage =  get_value_json(config, "assertion_percentage")
     oracle_assertions =  int(get_value_json(config, "oracle_assertions"))* "--oracle-assertions"
-
+    random_assertions =  int(get_value_json(config, "random_assertions"))* "--random-assertions"
+    stronger_assertions =  int(get_value_json(config, "stronger_assertions"))* "--stronger-assertions"
+    # stronger assertions will be added based on "percentage", unless Stronger_assertions=false
+    
     inline = int( get_value_json(config, "inline")) * "--inline"
 
     for_project=""
@@ -65,7 +69,8 @@ def produce_transformed_files(config, inv_folder):
             --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft}\
             --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set} \
                 --c-track={ctrack}  {inline}  --c-analysis={analysis}  \
-                    --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings\
+                    {random_assertions} {oracle_assertions} {stronger_assertions}  \
+                    --assertion-percentage={assertion_percentage}  --crab-disable-warnings\
                     -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} \
                     {inv_folder}/{file_name}.ll {enable_warnings} > /dev/null ")  # 2>/dev/null 
 
@@ -74,7 +79,7 @@ def produce_transformed_files(config, inv_folder):
         print("\n#################################################\n To see the error, type these commands\n")
         print(f"clang -S -emit-llvm -o {inv_folder}/{file_name}.ll {directory}{file_name}.c ")
         print("\n")
-        print(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry  --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft} --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set}  --c-track={ctrack}  {inline}  --c-analysis={analysis} --assertion-percentage={assertion_percentage} {oracle_assertions} --crab-disable-warnings  -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} {inv_folder}/{file_name}.ll")
+        print(f"clam.py --domain={domain} --no-preprocess --crab-disable-warnings --crab-promote-assume --crab-opt=add-invariants --crab-opt-invariants-loc=block-entry  --percentage={percentage} --inv-folder={inv_folder} --num-of-files={reft} --c-widening-delay={widening_delay} --c-narrowing-iterations={narrowing_iterations} --c-widening-jump-set={widening_jump_set}  --c-track={ctrack}  {inline}  --c-analysis={analysis} --assertion-percentage={assertion_percentage} {oracle_assertions} {stronger_assertions} {random_assertions} --crab-disable-warnings  -o {inv_folder}/{file_name}.bc --cpu={alarm} --mem={mem} {for_project} {inv_folder}/{file_name}.ll")
         print("#################################################\n")
     
     return proc == 0 

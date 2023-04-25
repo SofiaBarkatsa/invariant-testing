@@ -85,6 +85,16 @@ static llvm::cl::opt<bool>
              llvm::cl::init(false));    
 
 static llvm::cl::opt<bool>
+    RandomAssertions("random_assertions",
+             llvm::cl::desc("For adding random assertions given the Assertion Percentage"),
+             llvm::cl::init(false));    
+
+static llvm::cl::opt<bool>
+    StrongerAssertions("stronger_assertions",
+             llvm::cl::desc("For adding invariants as stronger Assertions"),
+             llvm::cl::init(false));    
+
+static llvm::cl::opt<bool>
     Smack("smack",
              llvm::cl::desc("Assumptions will have attribute noinline as well (llvm12)"),
              llvm::cl::init(false));  
@@ -104,7 +114,7 @@ STATISTIC(NumInstrLoads, "Number of load inst instrumented with invariants");
 // GLOBAL VARS BY SOFIA------------------------------------------------------------------
 std::ofstream out;			//file to write module pass output
 int Seed = 0;           // if seed == -1 then no transformations
-int AddAssertions = 0;  //if AddAssertions = 1, only then add oracle/random assertions
+int AddAssertions = 0;  //if AddAssertions = 1, only then add oracle/random/stronger assertions
 std::string Mode = "stronger";
 std::string Subfolder;
 llvm::Function *m_assertFn;
@@ -271,7 +281,7 @@ private:
   //###############################################################################
   // function by sofia-------------------------------
   static Value *cstToValue(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx, const Twine &Name, 
-                      IntegerType *ty, bool equality, bool inequality, bool strict_inequality, bool change_constant = false) {
+                      IntegerType *ty, std::string Mode, bool equality, bool inequality, bool strict_inequality, bool change_constant = false) {
     
     auto e = cst.expression() - cst.expression().constant();
 
@@ -483,23 +493,23 @@ private:
           case 1:
           { 
             // inequality (<=) to equality (=)
-            return cstToValue(cst, B, ctx, Name, ty, true, false, false);
+            return cstToValue(cst, B, ctx, Name, ty, "stronger", true, false, false);
           }
           case 2:
           { 
             // inequality (<=) to strict inequality (<)
-            return cstToValue(cst, B, ctx, Name, ty, false, false, true);
+            return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, true);
           }
           case 3:
           { 
             // change constant (x <= a) -> (x <= a - c)
             //currently as it is
-            return cstToValue(cst, B, ctx, Name, ty, false, false, false, true);
+            return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, false, true);
           }
           default:
           { 
             // leave it as it is
-            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+            return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, false);
           }
         }
       }
@@ -538,11 +548,11 @@ private:
           {
             // change constant (x <= a) -> (x <= a + c)
             //currently as it is
-            return cstToValue(cst, B, ctx, Name, ty, false, false, false, true);
+            return cstToValue(cst, B, ctx, Name, ty, "weaker", false, false, false, true);
           }
           default:
             // leave it as it is
-            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+            return cstToValue(cst, B, ctx, Name, ty, "weaker", false, false, false);
         }
       }
       else if (cst.is_equality()){
@@ -559,12 +569,12 @@ private:
           }
           case 1:
           { 
-            // turn quality (x = a) to inequality (x <= a + c)
-            return cstToValue(cst, B, ctx, Name, ty, false, true, false);
+            // turn equality (x = a) to inequality (x <= a + c)
+            return cstToValue(cst, B, ctx, Name, ty, "weaker", false, true, false);
           }
           default:
             // leave it as it is
-            return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+            return cstToValue(cst, B, ctx, Name, ty, "weaker", false, false, false);
         }
       }
       else {  //non equality
@@ -581,7 +591,7 @@ private:
     // NO TRANSFORMATION
     //========================================================================
     else if (! transform) { 
-        return cstToValue(cst, B, ctx, Name, ty, false, false, false);
+        return cstToValue(cst, B, ctx, Name, ty, "weaker", false, false, false);
     }
 
     else return nullptr; //in case something went wrong
@@ -627,6 +637,93 @@ private:
     return nullptr;
   }
 
+
+static Value *genStrongerAssert(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
+		     DominatorTree *DT, const Twine &Name = "stronger_assert_") {
+
+    if (cst.is_tautology()) {
+      return nullptr; // mkBool(ctx, true);
+    }
+    if (cst.is_contradiction()) {
+      return nullptr;  //avoid adding assert(false)
+    }
+    //get integer type (ty)
+    IntegerType *ty = nullptr;
+    for (auto v : cst.variables()) {
+      if (!ty) {
+        ty = getIntType(v.name());
+      } else {
+        if (ty != getIntType(v.name())) {
+          ty = nullptr;
+          break;
+        }
+      }
+    }
+    // more sanity checks before we insert the invariants
+    for (auto t : cst.expression()) {
+      varname_t v = t.second.name();
+      if (Value *vv = mkVar(v)) {
+        // cst can contain pointer variables representing their offsets.
+        // We ignore them for now.
+        if (!vv->getType()->isIntegerTy()) {
+          return nullptr;
+        }
+        if (Instruction *Def = dyn_cast<Instruction>(vv)) {
+          // check definition of invariant variable dominates the
+          // block where the invariant will be inserted.
+          BasicBlock *User = B.GetInsertBlock();
+          if (Def->getParent() == User && isa<PHINode>(Def)) {
+            // definition is a PHI node and its user is in the same
+            // basic block.  Since we only insert invariants after the
+            // last PHI node, we are ok.
+            continue;
+          } else if (DT && !(DT->dominates(Def, User))) {
+            // llvm::errs() << *Def << " does not dominate its use at block "
+            //             << User->getName() << "\n";
+            return nullptr;
+          }
+        }
+      } else {
+        return nullptr;
+      }
+    }
+
+    log_info(B.GetInsertBlock(), cst);  //always log info
+
+    //========================================================================
+    // STRONGER TRANSFORMATION
+    //========================================================================
+    
+    if (cst.is_inequality()){
+      int dice = throw_dice(3);
+      switch (dice){
+        case 0:
+        { 
+          // inequality (<=) to equality (=)
+          return cstToValue(cst, B, ctx, Name, ty, "stronger", true, false, false);
+        }
+        case 1:
+        { 
+          // inequality (<=) to strict inequality (<)
+          return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, true);
+        }
+        case 2:
+        { 
+          // change constant (x <= a) -> (x <= a - c)
+          //currently as it is
+          return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, false, true);
+        }
+        default:
+        { 
+          // leave it as it is
+          return cstToValue(cst, B, ctx, Name, ty, "stronger", false, false, false);
+        }
+      }
+    }
+    else {  //non equality or equality
+        return nullptr; //so as not to add assert false
+    } 
+  }
 
   static Value *genOracleAssert(lin_cst_t cst, IRBuilder<> B, LLVMContext &ctx,
 			DominatorTree *DT, const Twine &Name = "oracle_") {
@@ -753,9 +850,9 @@ public:
 
         //Sofia :
         //Add random assertion with a probability
-        if (flip_a_coin(AssertionPercentage) && AddAssertions == 1){
-          Value *assert_val = genRandomAssert(cst, B, ctx, DT, "assert_");
-          out<<"adding new assertion\n";
+        if (flip_a_coin(AssertionPercentage) && AddAssertions == 1 && RandomAssertions){
+          Value *assert_val = genRandomAssert(cst, B, ctx, DT, "random_assert_");
+          out<<"adding new random assertion\n";
 
           if (assert_val){ 
             CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
@@ -766,9 +863,26 @@ public:
             }
           }
         }
+
+        //TODO
+        if (flip_a_coin(AssertionPercentage) && AddAssertions == 1 && StrongerAssertions){
+          Value *assert_val = genStrongerAssert(cst, B, ctx, DT, "stronger_assert_");
+          out<<"adding new stronger assertion\n";
+
+          if (assert_val){ 
+            CallInst *ci_assert = B.CreateCall(m_assertFn, B.CreateZExtOrTrunc(assert_val, Type::getInt32Ty(ctx))); 
+        
+            if (cg) {
+              (*cg)[insertFun]->
+                addCalledFunction(ci_assert, (*cg)[ci_assert->getCalledFunction()]);
+            }
+          }
+        }
+
+
         //Add invariant as assertion if asked so 
         if (OracleAssertions && AddAssertions == 1){
-          Value *assert_val = genOracleAssert(cst, B, ctx, DT, "oracle_");
+          Value *assert_val = genOracleAssert(cst, B, ctx, DT, "oracle_assert_");
           out<<"adding oracle assertion\n";
 
           if (assert_val){ 

@@ -516,6 +516,12 @@ def parseArgs(argv):
     p.add_argument('--oracle-assertions', help='Add all invariants as assertions using Optimizer',
                     dest='oracle_assertions', default=False, action='store_true')
 
+    p.add_argument('--random-assertions', help='Add random assertions using Optimizer, given an assertion percentage',
+                    dest='random_assertions', default=False, action='store_true')
+
+    p.add_argument('--stronger-assertions', help='Add all invariants as assertions using Optimizer',
+                    dest='stronger_assertions', default=False, action='store_true')
+
     p.add_argument('--produce-one-file', help='While using Optimizer, produce only 1 file (initial.py)',
                     dest='produce_one_file', default=False, action='store_true')
     
@@ -1057,6 +1063,12 @@ def clam(in_name, out_name, args, extra_opts, cpu = -1, mem = -1):
 
     if args.oracle_assertions:
         clam_args.append('--oracle_assertions=true')
+
+    if args.stronger_assertions:
+        clam_args.append('--stronger_assertions=true')
+
+    if args.random_assertions:
+        clam_args.append('--random_assertions=true')
 
     if args.produce_one_file:
         clam_args.append('--produce_one_file=true')
