@@ -252,6 +252,7 @@ def main(core, inv_folder):
     files_to_ignore = bugs
     folders = process_files.find_folders(dd)
     random.shuffle(folders)
+    #folders.insert(0, "loop-lit")
 
     while(True):
 

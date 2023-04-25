@@ -732,6 +732,15 @@ public:
 	       Function *assumeFn, CallGraph *cg, DominatorTree *DT,
 	       const Function *insertFun, const Twine &Name = "") const{
     bool change = false;
+
+    // SOFIA: 
+    // do not add anything on verifier assert
+    llvm::BasicBlock * BB = B.GetInsertBlock();
+    llvm::Function * F = BB->getParent();
+    if (F->getName() == "__VERIFIER_assert"){
+      return false;
+    } 
+
     //for each constraint
     for (auto cst : csts) {
       if (Value *cst_code = genCode(cst, B, ctx, DT, Name)) {
