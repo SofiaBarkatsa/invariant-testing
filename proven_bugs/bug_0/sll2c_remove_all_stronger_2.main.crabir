@@ -1,0 +1,118 @@
+@V_34:int32 declare main()
+_1:
+/** INVARIANTS: {} **/
+  region_init(@V_14:region(int));
+  region_init(@V_17:region(int));
+  region_init(@V_18:region(ref));
+  region_init(@V_19:region(int));
+  region_init(@V_20:region(int));
+  crab_intrinsic(regions_from_memory_object,@V_15:region(ref),@V_16:region(int));
+  _2 := make_ref(@V_20:region(int),4,as_12);
+  assume(_2 > NULL_REF);
+  _3 := make_ref(@V_14:region(int),4,as_13);
+  assume(_3 > NULL_REF);
+  _4 := make_ref(@V_17:region(int),4,as_14);
+  assume(_4 > NULL_REF);
+  _5 := make_ref(@V_18:region(ref),8,as_15);
+  assume(_5 > NULL_REF);
+  _store := make_ref(@V_19:region(int),4,as_16);
+  assume(_store > NULL_REF);
+  store_to_ref(@V_20:region(int),_2:ref,0:int32);
+  store_to_ref(@V_14:region(int),_3:ref,2:int32);
+  store_to_ref(@V_17:region(int),_4:ref,1:int32);
+  @V_164 = 2;
+  @V_165 = 1;
+  (_store1:ref,@V_15:region(ref),@V_16:region(int))= call sll_circular_create(@V_164:int32,@V_165:int32);
+  store_to_ref(@V_18:region(ref),_5:ref,_store1:ref);
+  store_to_ref(@V_19:region(int),_store:ref,0:int32);
+/** INVARIANTS: ({}, {_2 -> [1, +oo], _3 -> [1, +oo], _4 -> [1, +oo], _5 -> [1, +oo], _store -> [1, +oo], @V_20 -> [0, 0], @V_14 -> [2, 2], @V_17 -> [1, 1], @V_164 -> [2, 2], @V_165 -> [1, 1], @V_19 -> [0, 0], _store1-@V_18<=0, @V_18-_store1<=0}) **/
+  goto _8;
+_8:
+/** INVARIANTS: ({}, {@V_14 -> [2, 2], @V_17 -> [1, 1], @V_19 -> [0, 1], @V_20 -> [0, 0], _2 -> [1, +oo], _3 -> [1, +oo], _4 -> [1, +oo], _5 -> [1, +oo], _store -> [1, +oo], @V_164 -> [2, 2], @V_165 -> [1, 1]}) **/
+  _9:int32 := load_from_ref(@V_19:region(int),_store:ref);
+/** INVARIANTS: ({}, {@V_14 -> [2, 2], @V_17 -> [1, 1], @V_19 -> [0, 1], @V_20 -> [0, 0], _2 -> [1, +oo], _3 -> [1, +oo], _4 -> [1, +oo], _5 -> [1, +oo], _store -> [1, +oo], @V_164 -> [2, 2], @V_165 -> [1, 1], _9 -> [0, 1], _9-@V_19<=0, @V_19-_9<=0}) **/
+  goto __@bb_8,__@bb_9;
+__@bb_8:
+  assume(_9 <= 1);
+  goto _call;
+_call:
+/** INVARIANTS: ({}, {@V_14 -> [2, 2], @V_17 -> [1, 1], @V_19 -> [0, 1], @V_20 -> [0, 0], _2 -> [1, +oo], _3 -> [1, +oo], _4 -> [1, +oo], _5 -> [1, +oo], _store -> [1, +oo], @V_164 -> [2, 2], @V_165 -> [1, 1], _9 -> [0, 1], _9-@V_19<=0, @V_19-_9<=0}) **/
+  @V_186 = 0;
+  crab_ = @V_186-_9;
+  crab_42 = (crab_ = 0);
+  assume(crab_42);
+  @V_189 = 0;
+  crab_43 = @V_189+_9;
+  crab_44 = (crab_43 <= 0);
+  assume(crab_44);
+  @V_192 = 0;
+  oracle_ = @V_192-_9;
+  oracle_7 = (oracle_ <= 0);
+  // loc(file=none line=-1 col=-1) id=15 Result:  OK
+  assert(oracle_7)   /* loc(file=none line=-1 col=-1) id=15 */;
+  @V_195 = 0;
+  oracle_10 = @V_195+_9;
+  oracle_11 = (oracle_10 <= 1);
+  // loc(file=none line=-1 col=-1) id=16 Result:  OK
+  assert(oracle_11)   /* loc(file=none line=-1 col=-1) id=16 */;
+  (@V_15:region(ref),@V_16:region(int),@V_18:region(ref))= call sll_circular_remove_first(_5:ref,@V_15:region(ref),@V_16:region(int),@V_18:region(ref));
+  _12:int32 := load_from_ref(@V_19:region(int),_store:ref);
+  _store2 = _12+1;
+  store_to_ref(@V_19:region(int),_store:ref,_store2:int32);
+/** INVARIANTS: ({crab_42 -> true; crab_44 -> true; oracle_7 -> true; oracle_11 -> true}, {@V_14 -> [2, 2], @V_17 -> [1, 1], @V_19 -> [1, 1], @V_20 -> [0, 0], _2 -> [1, +oo], _3 -> [1, +oo], _4 -> [1, +oo], _5 -> [1, +oo], _store -> [1, +oo], @V_164 -> [2, 2], @V_165 -> [1, 1], _9 -> [0, 0], @V_186 -> [0, 0], crab_ -> [0, 0], @V_189 -> [0, 0], crab_43 -> [0, 0], @V_192 -> [0, 0], oracle_ -> [0, 0], @V_195 -> [0, 0], oracle_10 -> [0, 0], _12 -> [0, 0], _store2 -> [1, 1], crab_43-_9<=0, crab_-@V_186<=0, @V_186-crab_<=1, crab_43-@V_189<=1, _9-crab_43<=0, @V_189-crab_43<=0}) **/
+  goto _8;
+__@bb_9:
+  assume(-_9 <= -2);
+  goto _14;
+_14:
+/** INVARIANTS: _|_ **/
+  @V_170 = 0;
+  crab_45 = @V_170-_9;
+  crab_46 = (crab_45 <= -2);
+  assume(crab_46);
+  assert_ = (_9 = 30);
+  // loc(file=none line=-1 col=-1) id=10 Result:  OK
+  assert(assert_)   /* loc(file=none line=-1 col=-1) id=10 */;
+  @V_174 = 0;
+  oracle_14 = @V_174-_9;
+  oracle_15 = (oracle_14 <= -2);
+  // loc(file=none line=-1 col=-1) id=11 Result:  OK
+  assert(oracle_15)   /* loc(file=none line=-1 col=-1) id=11 */;
+  _15:ref := load_from_ref(@V_18:region(ref),_5:ref);
+/** INVARIANTS: _|_ **/
+  goto __@bb_10,__@bb_11;
+__@bb_10:
+  assume(_15 > NULL_REF);
+  goto _br4;
+_br4:
+/** INVARIANTS: _|_ **/
+  @V_179 = 0;
+  crab_47 = @V_179-_9;
+  crab_48 = (crab_47 <= -2);
+  assume(crab_48);
+  assert_18 = (_9 = 80);
+  // loc(file=none line=-1 col=-1) id=12 Result:  OK
+  assert(assert_18)   /* loc(file=none line=-1 col=-1) id=12 */;
+  @V_183 = 0;
+  oracle_19 = @V_183-_9;
+  oracle_20 = (oracle_19 <= -2);
+  // loc(file=none line=-1 col=-1) id=13 Result:  OK
+  assert(oracle_20)   /* loc(file=none line=-1 col=-1) id=13 */;
+/** INVARIANTS: _|_ **/
+  goto _call5;
+_call5:
+/** INVARIANTS: _|_ **/
+  // loc(file=none line=-1 col=-1) id=14 Result:  OK
+  assert(false)   /* loc(file=none line=-1 col=-1) id=14 */;
+  unreachable;
+/** INVARIANTS: _|_ **/
+  goto _ret;
+_ret:
+/** INVARIANTS: _|_ **/
+  @V_34 = 0;
+/** INVARIANTS: _|_ **/
+
+__@bb_11:
+  assume(_15 <= NULL_REF);
+  goto _ret;
+

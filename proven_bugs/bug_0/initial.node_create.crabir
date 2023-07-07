@@ -1,0 +1,45 @@
+(_ret:ref,@V_16:region(ref),@V_17:region(int)) declare node_create(@V_23:int32)
+_2:
+/** INVARIANTS: {} **/
+  region_init(@V_4:region(int));
+  region_init(@V_5:region(ref));
+  region_init(@V_16:region(ref));
+  region_init(@V_17:region(int));
+  arg = @V_23;
+  crab_intrinsic(regions_from_memory_object,@V_16:region(ref),@V_17:region(int));
+  _3 := make_ref(@V_4:region(int),4,as_1);
+  assume(_3 > NULL_REF);
+  _store := make_ref(@V_5:region(ref),8,as_2);
+  assume(_store > NULL_REF);
+  store_to_ref(@V_4:region(int),_3:ref,arg:int32);
+  _5 := make_ref(@V_16:region(ref),16,as_3);
+  (@V_16:region(ref),_store1:ref) := gep_ref(@V_16:region(ref),_5:ref);
+  store_to_ref(@V_5:region(ref),_store:ref,_store1:ref);
+  _7:ref := load_from_ref(@V_5:region(ref),_store:ref);
+/** INVARIANTS: ({}, {_3 -> [1, +oo], _store -> [1, +oo], @V_23-arg<=0, @V_4-arg<=0, arg-@V_23<=0, @V_4-@V_23<=0, arg-@V_4<=0, @V_23-@V_4<=0, _5-_store1<=0, @V_5-_store1<=0, _7-_store1<=0, _store1-_5<=0, @V_5-_5<=0, _7-_5<=0, _store1-@V_5<=0, _5-@V_5<=0, _7-@V_5<=0, @V_5-_7<=0, _store1-_7<=0, _5-_7<=0}) **/
+  goto __@bb_4,__@bb_5;
+__@bb_4:
+  assume(_7 == NULL_REF);
+  goto _call;
+_call:
+/** INVARIANTS: ({}, {_3 -> [1, +oo], _store -> [1, +oo], _store1 -> [0, 0], _5 -> [0, 0], @V_5 -> [0, 0], _7 -> [0, 0], @V_23-arg<=0, @V_4-arg<=0, arg-@V_23<=0, @V_4-@V_23<=0, arg-@V_4<=0, @V_23-@V_4<=0, _5-_store1<=0, @V_5-_store1<=0, _7-_store1<=0, _store1-_5<=0, @V_5-_5<=0, _7-_5<=0, _store1-@V_5<=0, _5-@V_5<=0, _7-@V_5<=0, @V_5-_7<=0, _store1-_7<=0, _5-_7<=0}) **/
+  @V_42 = 1;
+   call myexit(@V_42:int32);
+/** INVARIANTS: ({}, {_3 -> [1, +oo], _store -> [1, +oo], _store1 -> [0, 0], _5 -> [0, 0], @V_5 -> [0, 0], _7 -> [0, 0], @V_42 -> [1, 1], @V_23-arg<=0, @V_4-arg<=0, arg-@V_23<=0, @V_4-@V_23<=0, arg-@V_4<=0, @V_23-@V_4<=0, _5-_store1<=0, @V_5-_store1<=0, _7-_store1<=0, _store1-_5<=0, @V_5-_5<=0, _7-_5<=0, _store1-@V_5<=0, _5-@V_5<=0, _7-@V_5<=0, @V_5-_7<=0, _store1-_7<=0, _5-_7<=0}) **/
+  goto _10;
+_10:
+/** INVARIANTS: ({}, {@V_5 -> [0, +oo], _3 -> [1, +oo], _store -> [1, +oo], _5 -> [0, +oo], _store1 -> [0, +oo], _7 -> [0, +oo], arg-@V_4<=0, @V_23-@V_4<=0, _store1-@V_5<=0, _5-@V_5<=0, _7-@V_5<=0, @V_23-arg<=0, @V_4-arg<=0, arg-@V_23<=0, @V_4-@V_23<=0, _store1-_5<=0, @V_5-_5<=0, _7-_5<=0, _5-_store1<=0, @V_5-_store1<=0, _7-_store1<=0, @V_5-_7<=0, _store1-_7<=0, _5-_7<=0}) **/
+  _11:ref := load_from_ref(@V_5:region(ref),_store:ref);
+  (@V_16:region(ref),_store2:ref) := gep_ref(@V_16:region(ref),_11:ref);
+  store_to_ref(@V_16:region(ref),_store2:ref,NULL_REF:ref);
+  _13:int32 := load_from_ref(@V_4:region(int),_3:ref);
+  _14:ref := load_from_ref(@V_5:region(ref),_store:ref);
+  (@V_17:region(int),_store3:ref) := gep_ref(@V_16:region(ref),_14:ref + 8);
+  store_to_ref(@V_17:region(int),_store3:ref,_13:int32);
+  _ret:ref := load_from_ref(@V_5:region(ref),_store:ref);
+/** INVARIANTS: ({}, {@V_5 -> [0, +oo], _3 -> [1, +oo], _store -> [1, +oo], _5 -> [0, +oo], _store1 -> [0, +oo], _7 -> [0, +oo], _11 -> [0, +oo], _store2 -> [0, +oo], @V_16 -> [0, 0], _14 -> [0, +oo], _store3 -> [8, +oo], _ret -> [0, +oo], arg-@V_4<=0, @V_23-@V_4<=0, _13-@V_4<=0, @V_17-@V_4<=0, _store1-@V_5<=0, _5-@V_5<=0, _7-@V_5<=0, _11-@V_5<=0, _store2-@V_5<=0, _14-@V_5<=0, _store3-@V_5<=8, _ret-@V_5<=0, @V_23-arg<=0, @V_4-arg<=0, _13-arg<=0, @V_17-arg<=0, arg-@V_23<=0, @V_4-@V_23<=0, _13-@V_23<=0, @V_17-@V_23<=0, _store1-_5<=0, @V_5-_5<=0, _7-_5<=0, _11-_5<=0, _store2-_5<=0, _14-_5<=0, _store3-_5<=8, _ret-_5<=0, _5-_store1<=0, @V_5-_store1<=0, _7-_store1<=0, _11-_store1<=0, _store2-_store1<=0, _14-_store1<=0, _store3-_store1<=8, _ret-_store1<=0, @V_5-_7<=0, _store1-_7<=0, _5-_7<=0, _11-_7<=0, _store2-_7<=0, _14-_7<=0, _store3-_7<=8, _ret-_7<=0, @V_5-_11<=0, _store1-_11<=0, _5-_11<=0, _7-_11<=0, _store2-_11<=0, _14-_11<=0, _store3-_11<=8, _ret-_11<=0, _11-_store2<=0, @V_5-_store2<=0, _store1-_store2<=0, _5-_store2<=0, _7-_store2<=0, _14-_store2<=0, _store3-_store2<=8, _ret-_store2<=0, @V_4-_13<=0, arg-_13<=0, @V_23-_13<=0, @V_17-_13<=0, @V_5-_14<=0, _store1-_14<=0, _5-_14<=0, _7-_14<=0, _11-_14<=0, _store2-_14<=0, _store3-_14<=8, _ret-_14<=0, _14-_store3<=-8, @V_5-_store3<=-8, _store1-_store3<=-8, _5-_store3<=-8, _7-_store3<=-8, _11-_store3<=-8, _store2-_store3<=-8, _ret-_store3<=-8, _13-@V_17<=0, @V_4-@V_17<=0, arg-@V_17<=0, @V_23-@V_17<=0, @V_5-_ret<=0, _store1-_ret<=0, _5-_ret<=0, _7-_ret<=0, _11-_ret<=0, _store2-_ret<=0, _14-_ret<=0, _store3-_ret<=8}) **/
+
+__@bb_5:
+  assume(_7 > NULL_REF);
+  goto _10;
+

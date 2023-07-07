@@ -1,0 +1,28 @@
+Logging assertions...
+Comparing assertions in files:
+invariants/core_0/initial.main.crabir 
+invariants/core_0/weaker_2/dekker_weaker_2.main.crabir 
+ 
+PASS 
+
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.thr1.crabir 
+invariants/core_0/weaker_2/dekker_weaker_2.thr1.crabir 
+ 
+FAIL 
+initial dict was:
+ {7: 0, 8: 1, 9: 1, 10: 1, 16: 1, 11: 1, 12: 0, 13: 1, 14: 1, 15: 1, 1: 1, 2: 0, 3: 1, 4: 1, 5: 1, 6: 1}
+transformed dict had instead:
+ {(12, 1)}
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.thr2.crabir 
+invariants/core_0/weaker_2/dekker_weaker_2.thr2.crabir 
+ 
+FAIL 
+initial dict was:
+ {23: 1, 24: 0, 25: 1, 26: 1, 32: 1, 27: 1, 28: 1, 29: 0, 30: 1, 31: 1, 17: 0, 18: 1, 19: 1, 20: 1, 21: 1, 22: 1}
+transformed dict had instead:
+ {(29, 1)}
+ ---------------------------------- 

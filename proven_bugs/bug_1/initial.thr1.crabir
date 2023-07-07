@@ -1,0 +1,202 @@
+(@V_2:arr(int),@V_4:arr(int),@V_6:arr(int),@V_8:arr(int)) declare thr1(@V_1:arr(int),@V_3:arr(int),@V_5:arr(int),@V_7:arr(int))
+_2:
+/** INVARIANTS: {} **/
+  array_assign(@V_2, @V_1);
+  array_assign(@V_4, @V_3);
+  array_assign(@V_6, @V_5);
+  array_assign(@V_8, @V_7);
+  array_store(@V_4,0,1,sz=4);
+/** INVARIANTS: ({}, {@V_4[0...3] -> [1, 1]}) **/
+  goto _4;
+_4:
+/** INVARIANTS: ({}, {@V_4[0...3] -> [1, 1]}) **/
+  _5 = array_load(@V_2,0,sz=4);
+/** INVARIANTS: ({}, {@V_4[0...3] -> [1, 1], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0}) **/
+  goto __@bb_13,__@bb_14;
+__@bb_13:
+  assume(-_5 <= -1);
+  goto _7;
+_7:
+/** INVARIANTS: ({}, {@V_4[0...3] -> [1, 1], _5 -> [1, +oo], @V_2[0...3] -> [1, +oo], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0}) **/
+  @V_46 = 0;
+  crab_ = @V_46-_5;
+  crab_56 = (crab_ <= -1);
+  assume(crab_56);
+  assert_ = (_5 = 53);
+  // loc(file=none line=-1 col=-1) id=7 Result:  FAIL -- num of warnings=1 
+  assert(assert_)   /* loc(file=none line=-1 col=-1) id=7 */;
+  @V_50 = 0;
+  oracle_ = @V_50-_5;
+  oracle_12 = (oracle_ <= -1);
+  // loc(file=none line=-1 col=-1) id=8 Result:  OK
+  assert(oracle_12)   /* loc(file=none line=-1 col=-1) id=8 */;
+  _8 = array_load(@V_6,@V_53,sz=4);
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [53, 53], @V_2[0...3] -> [53, 53], @V_46 -> [0, 0], crab_ -> [-oo, -1], @V_50 -> [0, 0], oracle_ -> [-53, -53], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0, crab_-@V_46<=-1}) **/
+  goto __@bb_17,__@bb_18;
+__@bb_17:
+  assume(_8 != 0);
+  goto _store2;
+_store2:
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [53, 53], @V_2[0...3] -> [53, 53], @V_46 -> [0, 0], crab_ -> [-oo, -1], @V_50 -> [0, 0], oracle_ -> [-53, -53], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0, crab_-@V_46<=-1}) **/
+  @V_56 = 0;
+  crab_57 = @V_56-_5;
+  crab_58 = (crab_57 <= -1);
+  assume(crab_58);
+  @V_59 = 0;
+  oracle_15 = @V_59-_5;
+  oracle_16 = (oracle_15 <= -1);
+  // loc(file=none line=-1 col=-1) id=9 Result:  OK
+  assert(oracle_16)   /* loc(file=none line=-1 col=-1) id=9 */;
+  array_store(@V_4,0,0,sz=4);
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true}, {@V_4[0...3] -> [0, 0], _5 -> [53, 53], @V_2[0...3] -> [53, 53], @V_46 -> [0, 0], crab_ -> [-oo, -1], @V_50 -> [0, 0], oracle_ -> [-53, -53], @V_56 -> [0, 0], crab_57 -> [-53, -53], @V_59 -> [0, 0], oracle_15 -> [-53, -53], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0, crab_-@V_46<=-1}) **/
+  goto _11;
+_11:
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true}, {_5 -> [53, 53], crab_ -> [-oo, -1], @V_46 -> [0, 0], oracle_ -> [-53, -53], @V_50 -> [0, 0], crab_57 -> [-53, -53], @V_56 -> [0, 0], oracle_15 -> [-53, -53], @V_59 -> [0, 0], @V_4[0...3] -> [0, 0], @V_2[0...3] -> [53, 53], @V_2[0...3]-_5<=0, crab_-@V_46<=-1, _5-@V_2[0...3]<=0}) **/
+  @V_62 = 0;
+  crab_59 = @V_62-_5;
+  crab_60 = (crab_59 <= -1);
+  assume(crab_60);
+  @V_65 = 0;
+  oracle_19 = @V_65-_5;
+  oracle_20 = (oracle_19 <= -1);
+  // loc(file=none line=-1 col=-1) id=10 Result:  OK
+  assert(oracle_20)   /* loc(file=none line=-1 col=-1) id=10 */;
+  _12 = array_load(@V_6,@V_68,sz=4);
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true; crab_60 -> true; oracle_20 -> true}, {_5 -> [53, 53], crab_ -> [-oo, -1], @V_46 -> [0, 0], oracle_ -> [-53, -53], @V_50 -> [0, 0], crab_57 -> [-53, -53], @V_56 -> [0, 0], oracle_15 -> [-53, -53], @V_59 -> [0, 0], @V_4[0...3] -> [0, 0], @V_2[0...3] -> [53, 53], @V_62 -> [0, 0], crab_59 -> [-53, -53], @V_65 -> [0, 0], oracle_19 -> [-53, -53], @V_2[0...3]-_5<=0, crab_-@V_46<=-1, _5-@V_2[0...3]<=0}) **/
+  goto __@bb_19,__@bb_20;
+__@bb_19:
+  assume(_12 != 0);
+  goto _br4;
+_br4:
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true; crab_60 -> true; oracle_20 -> true}, {_5 -> [53, 53], crab_ -> [-oo, -1], @V_46 -> [0, 0], oracle_ -> [-53, -53], @V_50 -> [0, 0], crab_57 -> [-53, -53], @V_56 -> [0, 0], oracle_15 -> [-53, -53], @V_59 -> [0, 0], @V_4[0...3] -> [0, 0], @V_2[0...3] -> [53, 53], @V_62 -> [0, 0], crab_59 -> [-53, -53], @V_65 -> [0, 0], oracle_19 -> [-53, -53], @V_2[0...3]-_5<=0, crab_-@V_46<=-1, _5-@V_2[0...3]<=0}) **/
+  @V_96 = 0;
+  crab_61 = @V_96-_5;
+  crab_62 = (crab_61 <= -1);
+  assume(crab_62);
+  @V_99 = 0;
+  oracle_23 = @V_99-_5;
+  oracle_24 = (oracle_23 <= -1);
+  // loc(file=none line=-1 col=-1) id=16 Result:  OK
+  assert(oracle_24)   /* loc(file=none line=-1 col=-1) id=16 */;
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true; crab_60 -> true; oracle_20 -> true; crab_62 -> true; oracle_24 -> true}, {_5 -> [53, 53], crab_ -> [-oo, -1], @V_46 -> [0, 0], oracle_ -> [-53, -53], @V_50 -> [0, 0], crab_57 -> [-53, -53], @V_56 -> [0, 0], oracle_15 -> [-53, -53], @V_59 -> [0, 0], @V_4[0...3] -> [0, 0], @V_2[0...3] -> [53, 53], @V_62 -> [0, 0], crab_59 -> [-53, -53], @V_65 -> [0, 0], oracle_19 -> [-53, -53], @V_96 -> [0, 0], crab_61 -> [-53, -53], @V_99 -> [0, 0], oracle_23 -> [-53, -53], @V_2[0...3]-_5<=0, crab_-@V_46<=-1, _5-@V_2[0...3]<=0}) **/
+  goto _11;
+__@bb_20:
+  assume(_12 = 0);
+  goto _store5;
+_store5:
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_58 -> true; oracle_16 -> true; crab_60 -> true; oracle_20 -> true}, {_5 -> [53, 53], crab_ -> [-oo, -1], @V_46 -> [0, 0], oracle_ -> [-53, -53], @V_50 -> [0, 0], crab_57 -> [-53, -53], @V_56 -> [0, 0], oracle_15 -> [-53, -53], @V_59 -> [0, 0], @V_4[0...3] -> [0, 0], @V_2[0...3] -> [53, 53], @V_62 -> [0, 0], crab_59 -> [-53, -53], @V_65 -> [0, 0], oracle_19 -> [-53, -53], _12 -> [0, 0], @V_2[0...3]-_5<=0, crab_-@V_46<=-1, _5-@V_2[0...3]<=0}) **/
+  @V_71 = 0;
+  crab_63 = @V_71-_5;
+  crab_64 = (crab_63 <= -1);
+  assume(crab_64);
+  @V_74 = 0;
+  crab_65 = @V_74-_12;
+  crab_66 = (crab_65 <= 0);
+  assume(crab_66);
+  @V_77 = 0;
+  crab_67 = @V_77+_12;
+  crab_68 = (crab_67 <= 0);
+  assume(crab_68);
+  @V_80 = 0;
+  oracle_27 = @V_80-_5;
+  oracle_28 = (oracle_27 <= -1);
+  // loc(file=none line=-1 col=-1) id=11 Result:  OK
+  assert(oracle_28)   /* loc(file=none line=-1 col=-1) id=11 */;
+  assert_31 = (_12 = 30);
+  // loc(file=none line=-1 col=-1) id=12 Result:  FAIL -- num of warnings=1 
+  assert(assert_31)   /* loc(file=none line=-1 col=-1) id=12 */;
+  @V_84 = 0;
+  oracle_32 = @V_84-_12;
+  oracle_33 = (oracle_32 <= 0);
+  // loc(file=none line=-1 col=-1) id=13 Result:  OK
+  assert(oracle_33)   /* loc(file=none line=-1 col=-1) id=13 */;
+  @V_87 = 0;
+  oracle_36 = @V_87+_12;
+  oracle_37 = (oracle_36 <= 0);
+  // loc(file=none line=-1 col=-1) id=14 Result:  OK
+  assert(oracle_37)   /* loc(file=none line=-1 col=-1) id=14 */;
+  array_store(@V_4,0,1,sz=4);
+/** INVARIANTS: _|_ **/
+  goto _br6;
+_br6:
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [53, 53], @V_2[0...3] -> [53, 53], @V_46 -> [0, 0], crab_ -> [-oo, -1], @V_50 -> [0, 0], oracle_ -> [-53, -53], _8 -> [0, 0], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0, crab_-@V_46<=-1}) **/
+  @V_90 = 0;
+  crab_69 = @V_90-_5;
+  crab_70 = (crab_69 <= -1);
+  assume(crab_70);
+  @V_93 = 0;
+  oracle_40 = @V_93-_5;
+  oracle_41 = (oracle_40 <= -1);
+  // loc(file=none line=-1 col=-1) id=15 Result:  OK
+  assert(oracle_41)   /* loc(file=none line=-1 col=-1) id=15 */;
+/** INVARIANTS: ({crab_56 -> true; assert_ -> true; oracle_12 -> true; crab_70 -> true; oracle_41 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [53, 53], @V_2[0...3] -> [53, 53], @V_46 -> [0, 0], crab_ -> [-oo, -1], @V_50 -> [0, 0], oracle_ -> [-53, -53], _8 -> [0, 0], @V_90 -> [0, 0], crab_69 -> [-53, -53], @V_93 -> [0, 0], oracle_40 -> [-53, -53], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0, crab_-@V_46<=-1}) **/
+  goto _4;
+__@bb_18:
+  assume(_8 = 0);
+  goto _br6;
+__@bb_14:
+  assume(_5 <= 0);
+  goto _store7;
+_store7:
+/** INVARIANTS: ({}, {@V_4[0...3] -> [1, 1], _5 -> [-oo, 0], @V_2[0...3] -> [-oo, 0], @V_2[0...3]-_5<=0, _5-@V_2[0...3]<=0}) **/
+  @V_19 = 0;
+  crab_71 = @V_19+_5;
+  crab_72 = (crab_71 <= 0);
+  assume(crab_72);
+  @V_22 = 0;
+  oracle_44 = @V_22+_5;
+  oracle_45 = (oracle_44 <= 0);
+  // loc(file=none line=-1 col=-1) id=1 Result:  OK
+  assert(oracle_45)   /* loc(file=none line=-1 col=-1) id=1 */;
+  array_store(@V_8,@V_25,0,sz=4);
+  _18 = array_load(@V_8,@V_27,sz=4);
+/** INVARIANTS: ({crab_72 -> true; oracle_45 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [-oo, 0], @V_2[0...3] -> [-oo, 0], @V_19 -> [0, 0], crab_71 -> [-oo, 0], @V_22 -> [0, 0], oracle_44 -> [-oo, 0], @V_2[0...3]-_5<=0, crab_71-_5<=0, oracle_44-_5<=0, _5-@V_2[0...3]<=0, crab_71-@V_2[0...3]<=0, oracle_44-@V_2[0...3]<=0, crab_71-@V_19<=0, _5-crab_71<=0, @V_2[0...3]-crab_71<=0, oracle_44-crab_71<=0, oracle_44-@V_22<=0, _5-oracle_44<=0, @V_2[0...3]-oracle_44<=0, crab_71-oracle_44<=0}) **/
+  goto __@bb_15,__@bb_16;
+__@bb_15:
+  assume(_18 <= 0);
+  goto _store10;
+_store10:
+/** INVARIANTS: ({crab_72 -> true; oracle_45 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [-oo, 0], @V_2[0...3] -> [-oo, 0], @V_19 -> [0, 0], crab_71 -> [-oo, 0], @V_22 -> [0, 0], oracle_44 -> [-oo, 0], _18 -> [-oo, 0], @V_2[0...3]-_5<=0, crab_71-_5<=0, oracle_44-_5<=0, _5-@V_2[0...3]<=0, crab_71-@V_2[0...3]<=0, oracle_44-@V_2[0...3]<=0, crab_71-@V_19<=0, _5-crab_71<=0, @V_2[0...3]-crab_71<=0, oracle_44-crab_71<=0, oracle_44-@V_22<=0, _5-oracle_44<=0, @V_2[0...3]-oracle_44<=0, crab_71-oracle_44<=0}) **/
+  array_store(@V_6,@V_44,1,sz=4);
+  array_store(@V_4,0,0,sz=4);
+/** INVARIANTS: ({crab_72 -> true; oracle_45 -> true}, {@V_4[0...3] -> [0, 0], _5 -> [-oo, 0], @V_2[0...3] -> [-oo, 0], @V_19 -> [0, 0], crab_71 -> [-oo, 0], @V_22 -> [0, 0], oracle_44 -> [-oo, 0], _18 -> [-oo, 0], @V_2[0...3]-_5<=0, crab_71-_5<=0, oracle_44-_5<=0, _5-@V_2[0...3]<=0, crab_71-@V_2[0...3]<=0, oracle_44-@V_2[0...3]<=0, crab_71-@V_19<=0, _5-crab_71<=0, @V_2[0...3]-crab_71<=0, oracle_44-crab_71<=0, oracle_44-@V_22<=0, _5-oracle_44<=0, @V_2[0...3]-oracle_44<=0, crab_71-oracle_44<=0}) **/
+
+__@bb_16:
+  assume(-_18 <= -1);
+  goto _br9;
+_br9:
+/** INVARIANTS: ({crab_72 -> true; oracle_45 -> true}, {@V_4[0...3] -> [1, 1], _5 -> [-oo, 0], @V_2[0...3] -> [-oo, 0], @V_19 -> [0, 0], crab_71 -> [-oo, 0], @V_22 -> [0, 0], oracle_44 -> [-oo, 0], _18 -> [1, +oo], @V_2[0...3]-_5<=0, crab_71-_5<=0, oracle_44-_5<=0, _5-@V_2[0...3]<=0, crab_71-@V_2[0...3]<=0, oracle_44-@V_2[0...3]<=0, crab_71-@V_19<=0, _5-crab_71<=0, @V_2[0...3]-crab_71<=0, oracle_44-crab_71<=0, oracle_44-@V_22<=0, _5-oracle_44<=0, @V_2[0...3]-oracle_44<=0, crab_71-oracle_44<=0}) **/
+  @V_30 = 0;
+  crab_73 = @V_30+_5;
+  crab_74 = (crab_73 <= 0);
+  assume(crab_74);
+  @V_33 = 0;
+  crab_75 = @V_33-_18;
+  crab_76 = (crab_75 <= -1);
+  assume(crab_76);
+  assert_48 = (_5 = 30);
+  // loc(file=none line=-1 col=-1) id=2 Result:  FAIL -- num of warnings=1 
+  assert(assert_48)   /* loc(file=none line=-1 col=-1) id=2 */;
+  @V_37 = 0;
+  oracle_49 = @V_37+_5;
+  oracle_50 = (oracle_49 <= 0);
+  // loc(file=none line=-1 col=-1) id=3 Result:  OK
+  assert(oracle_50)   /* loc(file=none line=-1 col=-1) id=3 */;
+  assert_53 = (_18 = 80);
+  // loc(file=none line=-1 col=-1) id=4 Result:  OK
+  assert(assert_53)   /* loc(file=none line=-1 col=-1) id=4 */;
+  @V_41 = 0;
+  oracle_54 = @V_41-_18;
+  oracle_55 = (oracle_54 <= -1);
+  // loc(file=none line=-1 col=-1) id=5 Result:  OK
+  assert(oracle_55)   /* loc(file=none line=-1 col=-1) id=5 */;
+/** INVARIANTS: _|_ **/
+  goto _call;
+_call:
+/** INVARIANTS: _|_ **/
+  // loc(file=none line=-1 col=-1) id=6 Result:  OK
+  assert(false)   /* loc(file=none line=-1 col=-1) id=6 */;
+  unreachable;
+/** INVARIANTS: _|_ **/
+  goto _store10;
+

@@ -1,0 +1,48 @@
+@V_13:int32 declare main()
+_1:
+/** INVARIANTS: {} **/
+  array_store(@V_6,0,0,sz=4);
+  array_store(@V_8,0,0,sz=4);
+  array_store(@V_2,0,0,sz=4);
+  array_store(@V_4,0,0,sz=4);
+  array_store(@V_626,0,0,sz=4);
+  _5 = array_load(@V_2,@V_628,sz=4);
+/** INVARIANTS: ({}, {@V_6[0...3] -> [0, 0], @V_8[0...3] -> [0, 0], @V_2[0...3] -> [0, 0], @V_4[0...3] -> [0, 0], @V_626[0...3] -> [0, 0], _5 -> [0, 0]}) **/
+  goto _7;
+_7:
+/** INVARIANTS: ({}, {@V_6[0...3] -> [0, 0], @V_8[0...3] -> [0, 0], @V_2[0...3] -> [0, 0], @V_4[0...3] -> [0, 0], @V_626[0...3] -> [0, 0], _5 -> [0, 0]}) **/
+  @V_631 = 0;
+  crab_ = @V_631-_5;
+  crab_17 = (crab_ <= 9);
+  assume(crab_17);
+  @V_634 = 0;
+  oracle_ = @V_634-_5;
+  oracle_3 = (oracle_ <= 0);
+  // loc(file=none line=-1 col=-1) id=33 Result:  OK
+  assert(oracle_3)   /* loc(file=none line=-1 col=-1) id=33 */;
+  assert_ = (_5 = 37);
+  // loc(file=none line=-1 col=-1) id=34 Result:  FAIL -- num of warnings=1 
+  assert(assert_)   /* loc(file=none line=-1 col=-1) id=34 */;
+  @V_638 = 0;
+  oracle_6 = @V_638+_5;
+  oracle_7 = (oracle_6 <= 0);
+  // loc(file=none line=-1 col=-1) id=35 Result:  OK
+  assert(oracle_7)   /* loc(file=none line=-1 col=-1) id=35 */;
+  _8 = array_load(@V_2,@V_641,sz=4);
+  _br1 = (_8 <= 1);
+  _11 = _br1;
+/** INVARIANTS: _|_ **/
+  goto _10;
+_10:
+/** INVARIANTS: _|_ **/
+  assume(_11);
+  havoc(_13) /* pthread_create(...)*/;
+  havoc(_14) /* pthread_create(...)*/;
+  _15 = array_load(@V_648,0,sz=8);
+  havoc(_16) /* pthread_join(...)*/;
+  _17 = array_load(@V_652,0,sz=8);
+  havoc(_ret) /* pthread_join(...)*/;
+  @V_13 = 0;
+/** INVARIANTS: _|_ **/
+
+

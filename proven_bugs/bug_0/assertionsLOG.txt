@@ -1,0 +1,40 @@
+Logging assertions...
+Comparing assertions in files:
+invariants/core_0/initial.main.crabir 
+invariants/core_0/stronger_2/sll2c_remove_all_stronger_2.main.crabir 
+ 
+FAIL 
+initially:
+ id = 12 -> 1
+transformed:
+ id = 12 -> 0
+
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.myexit.crabir 
+invariants/core_0/stronger_2/sll2c_remove_all_stronger_2.myexit.crabir 
+ 
+PASS 
+
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.node_create.crabir 
+invariants/core_0/stronger_2/sll2c_remove_all_stronger_2.node_create.crabir 
+ 
+PASS 
+
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.sll_circular_create.crabir 
+invariants/core_0/stronger_2/sll2c_remove_all_stronger_2.sll_circular_create.crabir 
+ 
+PASS 
+
+ ---------------------------------- 
+Comparing assertions in files:
+invariants/core_0/initial.sll_circular_remove_first.crabir 
+invariants/core_0/stronger_2/sll2c_remove_all_stronger_2.sll_circular_remove_first.crabir 
+ 
+PASS 
+
+ ---------------------------------- 

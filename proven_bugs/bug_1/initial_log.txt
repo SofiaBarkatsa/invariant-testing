@@ -1,0 +1,151 @@
+-------------------------------------------------
+SEED : -1
+ASSERT PERCENTAGE : 50%
+PERCENTAGE : 60%
+TRANSFORMATION MODE : weaker
+-------------------------------------------------
+
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _7 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _store2 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _11 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _br4 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _store5 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _store5 :
+    Initial constraint :    - _12 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _store5 :
+    Initial constraint :    + _12 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _br6 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _store7 :
+    Initial constraint :    + _5 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _br9 :
+    Initial constraint :    + _5 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr1	 In Block _br9 :
+    Initial constraint :    - _18 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _7 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _store2 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _11 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _br4 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _store5 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _store5 :
+    Initial constraint :    - _12 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _store5 :
+    Initial constraint :    + _12 <= 1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _br6 :
+    Initial constraint :    - _5 <= -1
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _store7 :
+    Initial constraint :    + _5 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _br9 :
+    Initial constraint :    + _5 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : thr2	 In Block _br9 :
+    Initial constraint :    + _18 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _7 :
+    Initial constraint :    - _5 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _7 :
+    Initial constraint :    + _5 <= 0
+
+Constraint as it was 

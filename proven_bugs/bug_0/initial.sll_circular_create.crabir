@@ -1,0 +1,146 @@
+(_ret:ref,@V_16:region(ref),@V_17:region(int)) declare sll_circular_create(@V_26:int32,@V_28:int32)
+_3:
+/** INVARIANTS: {} **/
+  region_init(@V_6:region(ref));
+  region_init(@V_7:region(ref));
+  region_init(@V_8:region(int));
+  region_init(@V_9:region(ref));
+  region_init(@V_10:region(int));
+  arg = @V_26;
+  arg1 = @V_28;
+  crab_intrinsic(regions_from_memory_object,@V_16:region(ref),@V_17:region(int));
+  _4 := make_ref(@V_10:region(int),4,as_4);
+  assume(_4 > NULL_REF);
+  _5 := make_ref(@V_8:region(int),4,as_5);
+  assume(_5 > NULL_REF);
+  _6 := make_ref(@V_9:region(ref),8,as_6);
+  assume(_6 > NULL_REF);
+  _7 := make_ref(@V_6:region(ref),8,as_7);
+  assume(_7 > NULL_REF);
+  _store := make_ref(@V_7:region(ref),8,as_8);
+  assume(_store > NULL_REF);
+  store_to_ref(@V_10:region(int),_4:ref,arg:int32);
+  store_to_ref(@V_8:region(int),_5:ref,arg1:int32);
+  _9:int32 := load_from_ref(@V_8:region(int),_5:ref);
+  (_store2:ref,@V_16:region(ref),@V_17:region(int))= call node_create(_9:int32);
+  store_to_ref(@V_9:region(ref),_6:ref,_store2:ref);
+  _store3:ref := load_from_ref(@V_9:region(ref),_6:ref);
+  store_to_ref(@V_6:region(ref),_7:ref,_store3:ref);
+/** INVARIANTS: ({}, {_4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], @V_26-arg<=0, @V_10-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, arg-@V_10<=0, @V_26-@V_10<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0}) **/
+  goto _12;
+_12:
+/** INVARIANTS: ({}, {_4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], @V_26-arg<=0, @V_10-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, arg-@V_10<=0, @V_26-@V_10<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0}) **/
+  @V_57 = 0;
+  crab_ = @V_57-arg1;
+  crab_46 = crab_+_9;
+  crab_47 = (crab_46 <= 0);
+  assume(crab_47);
+  @V_61 = 0;
+  crab_48 = @V_61+arg1;
+  crab_49 = crab_48-_9;
+  crab_50 = (crab_49 <= 0);
+  assume(crab_50);
+  assert_ = (arg1 = 53);
+  // loc(file=none line=-1 col=-1) id=1 Result:  FAIL -- num of warnings=1 
+  assert(assert_)   /* loc(file=none line=-1 col=-1) id=1 */;
+  @V_66 = 0;
+  oracle_ = @V_66-arg1;
+  oracle_11 = oracle_+_9;
+  oracle_12 = (oracle_11 <= 0);
+  // loc(file=none line=-1 col=-1) id=2 Result:  OK
+  assert(oracle_12)   /* loc(file=none line=-1 col=-1) id=2 */;
+  @V_70 = 0;
+  oracle_16 = @V_70+arg1;
+  oracle_17 = oracle_16-_9;
+  oracle_18 = (oracle_17 <= 0);
+  // loc(file=none line=-1 col=-1) id=3 Result:  OK
+  assert(oracle_18)   /* loc(file=none line=-1 col=-1) id=3 */;
+  _13:int32 := load_from_ref(@V_10:region(int),_4:ref);
+/** INVARIANTS: ({crab_47 -> true; crab_50 -> true; assert_ -> true; oracle_12 -> true; oracle_18 -> true}, {arg1 -> [53, 53], @V_28 -> [53, 53], _4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], @V_8 -> [53, 53], _9 -> [53, 53], @V_57 -> [0, 0], crab_46 -> [-oo, 0], @V_61 -> [0, 0], crab_48 -> [53, 53], crab_49 -> [-oo, 0], @V_66 -> [0, 0], oracle_ -> [-53, -53], oracle_11 -> [0, 0], @V_70 -> [0, 0], oracle_16 -> [53, 53], oracle_17 -> [0, 0], @V_26-arg<=0, @V_10-arg<=0, _13-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, _13-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, crab_48-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, crab_48-@V_28<=0, arg-@V_10<=0, @V_26-@V_10<=0, _13-@V_10<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, crab_48-@V_8<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, crab_48-_9<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0, arg1-crab_48<=0, @V_28-crab_48<=0, @V_8-crab_48<=0, _9-crab_48<=0, @V_10-_13<=0, arg-_13<=0, @V_26-_13<=0}) **/
+  goto __@bb_5,__@bb_6;
+__@bb_5:
+  assume(-_13 <= -2);
+  goto _15;
+_15:
+/** INVARIANTS: ({crab_47 -> true; crab_50 -> true; assert_ -> true; oracle_12 -> true; oracle_18 -> true}, {arg -> [2, +oo], @V_26 -> [2, +oo], arg1 -> [53, 53], @V_28 -> [53, 53], _4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], @V_10 -> [2, +oo], @V_8 -> [53, 53], _9 -> [53, 53], @V_57 -> [0, 0], crab_46 -> [-oo, 0], @V_61 -> [0, 0], crab_48 -> [53, 53], crab_49 -> [-oo, 0], @V_66 -> [0, 0], oracle_ -> [-53, -53], oracle_11 -> [0, 0], @V_70 -> [0, 0], oracle_16 -> [53, 53], oracle_17 -> [0, 0], _13 -> [2, +oo], @V_26-arg<=0, @V_10-arg<=0, _13-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, _13-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, crab_48-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, crab_48-@V_28<=0, arg-@V_10<=0, @V_26-@V_10<=0, _13-@V_10<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, crab_48-@V_8<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, crab_48-_9<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0, arg1-crab_48<=0, @V_28-crab_48<=0, @V_8-crab_48<=0, _9-crab_48<=0, @V_10-_13<=0, arg-_13<=0, @V_26-_13<=0}) **/
+  @V_79 = 0;
+  crab_51 = @V_79-arg;
+  crab_52 = (crab_51 <= -2);
+  assume(crab_52);
+  @V_82 = 0;
+  crab_53 = @V_82-_13;
+  crab_54 = (crab_53 <= -2);
+  assume(crab_54);
+  @V_85 = 0;
+  crab_55 = @V_85-arg;
+  crab_56 = crab_55+_13;
+  crab_57 = (crab_56 <= 0);
+  assume(crab_57);
+  @V_89 = 0;
+  crab_58 = @V_89-arg1;
+  crab_59 = crab_58+_9;
+  crab_60 = (crab_59 <= 0);
+  assume(crab_60);
+  @V_93 = 0;
+  crab_61 = @V_93+arg1;
+  crab_62 = crab_61-_9;
+  crab_63 = (crab_62 <= 0);
+  assume(crab_63);
+  @V_97 = 0;
+  oracle_21 = @V_97-arg;
+  oracle_22 = (oracle_21 <= -2);
+  // loc(file=none line=-1 col=-1) id=4 Result:  OK
+  assert(oracle_22)   /* loc(file=none line=-1 col=-1) id=4 */;
+  @V_100 = 0;
+  oracle_25 = @V_100-_13;
+  oracle_26 = (oracle_25 <= -2);
+  // loc(file=none line=-1 col=-1) id=5 Result:  OK
+  assert(oracle_26)   /* loc(file=none line=-1 col=-1) id=5 */;
+  @V_103 = 0;
+  oracle_30 = @V_103-arg;
+  oracle_31 = oracle_30+_13;
+  oracle_32 = (oracle_31 <= 0);
+  // loc(file=none line=-1 col=-1) id=6 Result:  FAIL -- num of warnings=1 
+  assert(oracle_32)   /* loc(file=none line=-1 col=-1) id=6 */;
+  assert_36 = (arg1 = 30);
+  // loc(file=none line=-1 col=-1) id=7 Result:  FAIL -- num of warnings=1 
+  assert(assert_36)   /* loc(file=none line=-1 col=-1) id=7 */;
+  @V_108 = 0;
+  oracle_37 = @V_108-arg1;
+  oracle_38 = oracle_37+_9;
+  oracle_39 = (oracle_38 <= 0);
+  // loc(file=none line=-1 col=-1) id=8 Result:  OK
+  assert(oracle_39)   /* loc(file=none line=-1 col=-1) id=8 */;
+  @V_112 = 0;
+  oracle_43 = @V_112+arg1;
+  oracle_44 = oracle_43-_9;
+  oracle_45 = (oracle_44 <= 0);
+  // loc(file=none line=-1 col=-1) id=9 Result:  OK
+  assert(oracle_45)   /* loc(file=none line=-1 col=-1) id=9 */;
+  _16:int32 := load_from_ref(@V_8:region(int),_5:ref);
+  (_store4:ref,@V_16:region(ref),@V_17:region(int))= call node_create(_16:int32);
+  store_to_ref(@V_7:region(ref),_store:ref,_store4:ref);
+  _18:ref := load_from_ref(@V_9:region(ref),_6:ref);
+  _19:ref := load_from_ref(@V_7:region(ref),_store:ref);
+  (@V_16:region(ref),_store5:ref) := gep_ref(@V_16:region(ref),_19:ref);
+  store_to_ref(@V_16:region(ref),_store5:ref,_18:ref);
+  _store6:ref := load_from_ref(@V_7:region(ref),_store:ref);
+  store_to_ref(@V_9:region(ref),_6:ref,_store6:ref);
+  _22:int32 := load_from_ref(@V_10:region(int),_4:ref);
+  _store7 = _22+-1;
+  store_to_ref(@V_10:region(int),_4:ref,_store7:int32);
+/** INVARIANTS: _|_ **/
+  goto _12;
+__@bb_6:
+  assume(_13 <= 1);
+  goto _24;
+_24:
+/** INVARIANTS: ({crab_47 -> true; crab_50 -> true; assert_ -> true; oracle_12 -> true; oracle_18 -> true}, {arg -> [-oo, 1], @V_26 -> [-oo, 1], arg1 -> [53, 53], @V_28 -> [53, 53], _4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], @V_10 -> [-oo, 1], @V_8 -> [53, 53], _9 -> [53, 53], @V_57 -> [0, 0], crab_46 -> [-oo, 0], @V_61 -> [0, 0], crab_48 -> [53, 53], crab_49 -> [-oo, 0], @V_66 -> [0, 0], oracle_ -> [-53, -53], oracle_11 -> [0, 0], @V_70 -> [0, 0], oracle_16 -> [53, 53], oracle_17 -> [0, 0], _13 -> [-oo, 1], @V_26-arg<=0, @V_10-arg<=0, _13-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, _13-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, crab_48-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, crab_48-@V_28<=0, arg-@V_10<=0, @V_26-@V_10<=0, _13-@V_10<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, crab_48-@V_8<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, crab_48-_9<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0, arg1-crab_48<=0, @V_28-crab_48<=0, @V_8-crab_48<=0, _9-crab_48<=0, @V_10-_13<=0, arg-_13<=0, @V_26-_13<=0}) **/
+  _25:ref := load_from_ref(@V_9:region(ref),_6:ref);
+  _26:ref := load_from_ref(@V_6:region(ref),_7:ref);
+  (@V_16:region(ref),_store8:ref) := gep_ref(@V_16:region(ref),_26:ref);
+  store_to_ref(@V_16:region(ref),_store8:ref,_25:ref);
+  _ret:ref := load_from_ref(@V_9:region(ref),_6:ref);
+/** INVARIANTS: ({crab_47 -> true; crab_50 -> true; assert_ -> true; oracle_12 -> true; oracle_18 -> true}, {@V_8 -> [53, 53], @V_10 -> [-oo, 1], arg -> [-oo, 1], @V_26 -> [-oo, 1], arg1 -> [53, 53], @V_28 -> [53, 53], _4 -> [1, +oo], _5 -> [1, +oo], _6 -> [1, +oo], _7 -> [1, +oo], _store -> [1, +oo], _9 -> [53, 53], @V_57 -> [0, 0], crab_46 -> [-oo, 0], crab_48 -> [53, 53], @V_61 -> [0, 0], crab_49 -> [-oo, 0], oracle_ -> [-53, -53], @V_66 -> [0, 0], oracle_11 -> [0, 0], oracle_16 -> [53, 53], @V_70 -> [0, 0], oracle_17 -> [0, 0], _13 -> [-oo, 1], _store3-@V_6<=0, @V_9-@V_6<=0, _store2-@V_6<=0, _25-@V_6<=0, _26-@V_6<=0, _store8-@V_6<=0, _ret-@V_6<=0, arg1-@V_8<=0, @V_28-@V_8<=0, _9-@V_8<=0, crab_48-@V_8<=0, _store2-@V_9<=0, _store3-@V_9<=0, @V_6-@V_9<=0, _25-@V_9<=0, _26-@V_9<=0, _store8-@V_9<=0, _ret-@V_9<=0, arg-@V_10<=0, @V_26-@V_10<=0, _13-@V_10<=0, @V_26-arg<=0, @V_10-arg<=0, _13-arg<=0, arg-@V_26<=0, @V_10-@V_26<=0, _13-@V_26<=0, @V_28-arg1<=0, @V_8-arg1<=0, _9-arg1<=0, crab_48-arg1<=0, arg1-@V_28<=0, @V_8-@V_28<=0, _9-@V_28<=0, crab_48-@V_28<=0, @V_8-_9<=0, arg1-_9<=0, @V_28-_9<=0, crab_48-_9<=0, @V_9-_store2<=0, _store3-_store2<=0, @V_6-_store2<=0, _25-_store2<=0, _26-_store2<=0, _store8-_store2<=0, _ret-_store2<=0, @V_9-_store3<=0, _store2-_store3<=0, @V_6-_store3<=0, _25-_store3<=0, _26-_store3<=0, _store8-_store3<=0, _ret-_store3<=0, arg1-crab_48<=0, @V_28-crab_48<=0, @V_8-crab_48<=0, _9-crab_48<=0, @V_10-_13<=0, arg-_13<=0, @V_26-_13<=0, @V_9-_25<=0, _store2-_25<=0, _store3-_25<=0, @V_6-_25<=0, _26-_25<=0, _store8-_25<=0, _ret-_25<=0, @V_6-_26<=0, _store3-_26<=0, @V_9-_26<=0, _store2-_26<=0, _25-_26<=0, _store8-_26<=0, _ret-_26<=0, _26-_store8<=0, @V_6-_store8<=0, _store3-_store8<=0, @V_9-_store8<=0, _store2-_store8<=0, _25-_store8<=0, _ret-_store8<=0, @V_9-_ret<=0, _store2-_ret<=0, _store3-_ret<=0, @V_6-_ret<=0, _25-_ret<=0, _26-_ret<=0, _store8-_ret<=0}) **/
+
+

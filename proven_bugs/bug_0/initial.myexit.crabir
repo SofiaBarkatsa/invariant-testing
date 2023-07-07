@@ -1,0 +1,17 @@
+void declare myexit(@V_2:int32)
+_2:
+/** INVARIANTS: {} **/
+  region_init(@V_3:region(int));
+  region_init(@V_16:region(ref));
+  region_init(@V_17:region(int));
+  arg = @V_2;
+  crab_intrinsic(regions_from_memory_object,@V_16:region(ref),@V_17:region(int));
+  _store := make_ref(@V_3:region(int),4,as_0);
+  assume(_store > NULL_REF);
+  store_to_ref(@V_3:region(int),_store:ref,arg:int32);
+/** INVARIANTS: ({}, {_store -> [1, +oo], @V_2-arg<=0, @V_3-arg<=0, arg-@V_2<=0, @V_3-@V_2<=0, arg-@V_3<=0, @V_2-@V_3<=0}) **/
+  goto _br;
+_br:
+/** INVARIANTS: ({}, {_store -> [1, +oo], @V_2-arg<=0, @V_3-arg<=0, arg-@V_2<=0, @V_3-@V_2<=0, arg-@V_3<=0, @V_2-@V_3<=0}) **/
+  goto _br;
+

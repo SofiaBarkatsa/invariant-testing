@@ -1,0 +1,74 @@
+-------------------------------------------------
+SEED : 763080
+ASSERT PERCENTAGE : 50%
+PERCENTAGE : 50%
+TRANSFORMATION MODE : stronger
+-------------------------------------------------
+
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _12 :
+    Initial constraint :    - arg1 + _9 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _12 :
+    Initial constraint :    + arg1 - _9 <= 0
+
+Constraint turned to equality (=) 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _15 :
+    Initial constraint :    - arg <= -2
+
+making constraint stronger: from <=-2 to <=-11
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _15 :
+    Initial constraint :    - _13 <= -2
+
+Constraint turned to equality (=) 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _15 :
+    Initial constraint :    - arg + _13 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _15 :
+    Initial constraint :    - arg1 + _9 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : sll_circular_create	 In Block _15 :
+    Initial constraint :    + arg1 - _9 <= 0
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _call :
+    Initial constraint :    - _9 <= 0
+
+Constraint turned to equality (=) 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _call :
+    Initial constraint :    + _9 <= 1
+
+Constraint turned to strict inequality (<) 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _14 :
+    Initial constraint :    - _9 <= -2
+
+Constraint as it was 
+-------------------------------------------------------------------------------------
+
+In function : main	 In Block _br4 :
+    Initial constraint :    - _9 <= -2
+
+Constraint as it was 
